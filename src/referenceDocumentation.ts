@@ -12,12 +12,11 @@ export interface IDocumentation extends IRawComponentComment {
 
 const documentationJSON: IRawComponentComment[] = require('coveo-search-ui/bin/docgen/docgen.json');
 
-
 export class ReferenceDocumentation {
   private static documentations: { [component: string]: IDocumentation };
 
   constructor() {
-    if(ReferenceDocumentation.documentations == null) {
+    if (ReferenceDocumentation.documentations == null) {
       ReferenceDocumentation.documentations = {};
       this.fillTree();
     }
@@ -26,7 +25,7 @@ export class ReferenceDocumentation {
   public getComponent(symbol: vscode.SymbolInformation): IDocumentation {
     const allComponents = _.keys(ReferenceDocumentation.documentations);
     const componentFound = _.find(allComponents, (component: string) => {
-      if(symbol.name) {
+      if (symbol.name) {
         return symbol.name.indexOf(component) != -1;
       }
       return false;
@@ -59,33 +58,47 @@ export class ReferenceDocumentation {
           name: doc.name,
           comment: doc.comment,
           options: []
-        }
+        };
       })
       .value();
 
-    formattedDocumentations.forEach((formattedDocumentation: IDocumentation) => {
-      ReferenceDocumentation.documentations[formattedDocumentation.name] = formattedDocumentation;
+    formattedDocumentations.forEach(
+      (formattedDocumentation: IDocumentation) => {
+        ReferenceDocumentation.documentations[
+          formattedDocumentation.name
+        ] = formattedDocumentation;
 
-      documentationJSON.forEach((rawComment: IRawComponentComment) => {
-        const isOption = this.isComponentOption(formattedDocumentation, rawComment);
-        if (isOption && isOption[1]) {
-          const optFormatted: IRawComponentComment = {
-            name: isOption[1],
-            comment : rawComment.comment
+        documentationJSON.forEach((rawComment: IRawComponentComment) => {
+          const isOption = this.isComponentOption(
+            formattedDocumentation,
+            rawComment
+          );
+          if (isOption && isOption[1]) {
+            const optFormatted: IRawComponentComment = {
+              name: isOption[1],
+              comment: rawComment.comment
+            };
+            ReferenceDocumentation.documentations[
+              formattedDocumentation.name
+            ].options.push(optFormatted);
           }
-          ReferenceDocumentation.documentations[formattedDocumentation.name].options.push(optFormatted);
-        }
-      });
-    });
+        });
+      }
+    );
   }
 
   private isComponent(doc: IRawComponentComment) {
     return /^[^.]+$/i.test(doc.name);
   }
 
-  private isComponentOption(formattedDocumentation: IDocumentation, rawComment: IRawComponentComment) {
-    const regex: RegExp = new RegExp(`^${formattedDocumentation.name}\.options\.([a-zA-Z]+)$`, 'i');
+  private isComponentOption(
+    formattedDocumentation: IDocumentation,
+    rawComment: IRawComponentComment
+  ) {
+    const regex: RegExp = new RegExp(
+      `^${formattedDocumentation.name}\.options\.([a-zA-Z]+)$`,
+      'i'
+    );
     return rawComment.name.match(regex);
   }
-
 }

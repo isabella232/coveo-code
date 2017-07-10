@@ -62,43 +62,28 @@ export class ReferenceDocumentation {
       })
       .value();
 
-    formattedDocumentations.forEach(
-      (formattedDocumentation: IDocumentation) => {
-        ReferenceDocumentation.documentations[
-          formattedDocumentation.name
-        ] = formattedDocumentation;
+    formattedDocumentations.forEach((formattedDocumentation: IDocumentation) => {
+      ReferenceDocumentation.documentations[formattedDocumentation.name] = formattedDocumentation;
 
-        documentationJSON.forEach((rawComment: IRawComponentComment) => {
-          const isOption = this.isComponentOption(
-            formattedDocumentation,
-            rawComment
-          );
-          if (isOption && isOption[1]) {
-            const optFormatted: IRawComponentComment = {
-              name: isOption[1],
-              comment: rawComment.comment
-            };
-            ReferenceDocumentation.documentations[
-              formattedDocumentation.name
-            ].options.push(optFormatted);
-          }
-        });
-      }
-    );
+      documentationJSON.forEach((rawComment: IRawComponentComment) => {
+        const isOption = this.isComponentOption(formattedDocumentation, rawComment);
+        if (isOption && isOption[1]) {
+          const optFormatted: IRawComponentComment = {
+            name: isOption[1],
+            comment: rawComment.comment
+          };
+          ReferenceDocumentation.documentations[formattedDocumentation.name].options.push(optFormatted);
+        }
+      });
+    });
   }
 
   private isComponent(doc: IRawComponentComment) {
     return /^[^.]+$/i.test(doc.name);
   }
 
-  private isComponentOption(
-    formattedDocumentation: IDocumentation,
-    rawComment: IRawComponentComment
-  ) {
-    const regex: RegExp = new RegExp(
-      `^${formattedDocumentation.name}\.options\.([a-zA-Z]+)$`,
-      'i'
-    );
+  private isComponentOption(formattedDocumentation: IDocumentation, rawComment: IRawComponentComment) {
+    const regex: RegExp = new RegExp(`^${formattedDocumentation.name}\.options\.([a-zA-Z]+)$`, 'i');
     return rawComment.name.match(regex);
   }
 }

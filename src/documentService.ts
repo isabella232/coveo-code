@@ -1,13 +1,7 @@
 import * as vscode from 'vscode';
-import {
-  ReferenceDocumentation,
-  IDocumentation
-} from './referenceDocumentation';
+import { ReferenceDocumentation, IDocumentation } from './referenceDocumentation';
 import * as _ from 'lodash';
-import {
-  getLanguageService,
-  LanguageService
-} from 'vscode-html-languageservice';
+import { getLanguageService, LanguageService } from 'vscode-html-languageservice';
 
 const htmlLangService: LanguageService = getLanguageService();
 
@@ -23,17 +17,11 @@ export function fromDocumentToComponent(
   return referenceDocumentation.getComponent(currentSymbol);
 }
 
-export function getAllComponentsSymbol(
-  componentsInfo,
-  document: vscode.TextDocument
-): vscode.SymbolInformation[] {
+export function getAllComponentsSymbol(componentsInfo, document: vscode.TextDocument): vscode.SymbolInformation[] {
   const transformedDoc = transformTextDocumentApi(document);
   const htmlDoc = htmlLangService.parseHTMLDocument(transformedDoc);
   // This needs to be done because there's an incompatibility between the htmllanguage service type and the latest d.ts for VS code API
-  const symbols = <any>htmlLangService.findDocumentSymbols(
-    transformedDoc,
-    htmlDoc
-  );
+  const symbols = <any>htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc);
   return _.filter(symbols, (symbol: vscode.SymbolInformation) => {
     return componentsInfo.getComponent(symbol) != null;
   });
@@ -58,14 +46,8 @@ function transformTextDocumentApi(document: vscode.TextDocument) {
   return transform;
 }
 
-function _getCurrentSymbol(
-  symbols: vscode.SymbolInformation[],
-  position: vscode.Position
-): vscode.SymbolInformation {
+function _getCurrentSymbol(symbols: vscode.SymbolInformation[], position: vscode.Position): vscode.SymbolInformation {
   return _.findLast(symbols, (symbol: vscode.SymbolInformation) => {
-    return new vscode.Range(
-      symbol.location.range.start,
-      symbol.location.range.end
-    ).contains(position);
+    return new vscode.Range(symbol.location.range.start, symbol.location.range.end).contains(position);
   });
 }

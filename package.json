@@ -16,14 +16,14 @@
     "contributes": {
         "commands": [
             {
-                "command": "extension.showHtmlPreview",
-                "title": "Show HTML Preview"
+                "command": "extension.showCoveoPreview",
+                "title": "Show Preview of Coveo Components"
             }
         ],
         "menus": {
             "editor/title": [
                 {
-                    "command": "extension.showHtmlPreview",
+                    "command": "extension.showCoveoPreview",
                     "when": "resourceLangId == html"
                 }
             ]
@@ -38,17 +38,18 @@
         "prettier": "prettier --single-quote --print-width 120 --write 'src/**/*.ts'"
     },
     "devDependencies": {
+        "@types/lodash": "^4.14.68",
+        "@types/mocha": "^2.2.32",
+        "@types/node": "^6.0.40",
+        "mocha": "^2.3.3",
+        "prettier": "^1.5.2",
         "typescript": "^2.0.3",
         "vscode": "^1.0.0",
-        "mocha": "^2.3.3",
-        "@types/node": "^6.0.40",
-        "@types/mocha": "^2.2.32",
-        "@types/lodash": "^4.14.68",
-        "prettier": "^1.5.2"
+        "write": "^1.0.3"
     },
     "dependencies": {
         "coveo-search-ui": "2.x.x",
-        "html-to-text": "^3.2.0",
+        "html-to-text": "^3.3.0",
         "lodash": "^4.17.4",
         "remove-markdown": "^0.1.0",
         "upndown": "^2.1.0",

@@ -10,15 +10,14 @@ export interface IDocumentation extends IRawComponentComment {
   options: IRawComponentComment[];
 }
 
-const documentationJSON: IRawComponentComment[] = require('coveo-search-ui/bin/docgen/docgen.json');
+const documentationJSON: { [component: string]: IDocumentation } = require('../data/documentation.json');
 
 export class ReferenceDocumentation {
   private static documentations: { [component: string]: IDocumentation };
 
   constructor() {
     if (ReferenceDocumentation.documentations == null) {
-      ReferenceDocumentation.documentations = {};
-      this.fillTree();
+      ReferenceDocumentation.documentations = documentationJSON;
     }
   }
 
@@ -46,44 +45,5 @@ export class ReferenceDocumentation {
       return ReferenceDocumentation.documentations[withoutCoveo];
     }
     return null;
-  }
-
-  private fillTree() {
-    const formattedDocumentations = _.chain(documentationJSON)
-      .filter((doc: IRawComponentComment) => {
-        return this.isComponent(doc);
-      })
-      .map((doc: IRawComponentComment) => {
-        return {
-          name: doc.name,
-          comment: doc.comment,
-          options: []
-        };
-      })
-      .value();
-
-    formattedDocumentations.forEach((formattedDocumentation: IDocumentation) => {
-      ReferenceDocumentation.documentations[formattedDocumentation.name] = formattedDocumentation;
-
-      documentationJSON.forEach((rawComment: IRawComponentComment) => {
-        const isOption = this.isComponentOption(formattedDocumentation, rawComment);
-        if (isOption && isOption[1]) {
-          const optFormatted: IRawComponentComment = {
-            name: isOption[1],
-            comment: rawComment.comment
-          };
-          ReferenceDocumentation.documentations[formattedDocumentation.name].options.push(optFormatted);
-        }
-      });
-    });
-  }
-
-  private isComponent(doc: IRawComponentComment) {
-    return /^[^.]+$/i.test(doc.name);
-  }
-
-  private isComponentOption(formattedDocumentation: IDocumentation, rawComment: IRawComponentComment) {
-    const regex: RegExp = new RegExp(`^${formattedDocumentation.name}\.options\.([a-zA-Z]+)$`, 'i');
-    return rawComment.name.match(regex);
   }
 }

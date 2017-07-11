@@ -2,8 +2,8 @@ import * as vscode from 'vscode';
 import * as _ from 'lodash';
 import * as htmlToText from 'html-to-text';
 import * as removeMarkdown from 'remove-markdown';
-import { ReferenceDocumentation, IDocumentation } from '../referenceDocumentation'
-import { fromDocumentToComponent, getCurrentSymbol, fromDocumentToComponentOption } from "../documentService";
+import { ReferenceDocumentation, IDocumentation } from '../referenceDocumentation';
+import { fromDocumentToComponent, getCurrentSymbol, fromDocumentToComponentOption } from '../documentService';
 
 const camelCaseToHyphenRegex = /([A-Z])|\W+(\w)/g;
 
@@ -12,14 +12,15 @@ function camelCaseToHyphen(name: string) {
 }
 
 export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider {
-
-  constructor(public referenceDocumentation: ReferenceDocumentation) {
-  }
-  public provideCompletionItems(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): Thenable<vscode.CompletionItem[]> {
-
+  constructor(public referenceDocumentation: ReferenceDocumentation) {}
+  public provideCompletionItems(
+    document: vscode.TextDocument,
+    position: vscode.Position,
+    token: vscode.CancellationToken
+  ): Thenable<vscode.CompletionItem[]> {
     return new Promise<vscode.CompletionItem[]>((resolve, reject) => {
       let completionItems: vscode.CompletionItem[] = [];
-      document.getWordRangeAtPosition
+      document.getWordRangeAtPosition;
       const currentComponent = fromDocumentToComponent(this.referenceDocumentation, position, document);
       const currentOptions = fromDocumentToComponentOption(this.referenceDocumentation, position, document);
       if (currentComponent) {

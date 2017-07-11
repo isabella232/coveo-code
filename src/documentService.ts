@@ -17,19 +17,24 @@ export function fromDocumentToComponent(
   return referenceDocumentation.getComponent(currentSymbol);
 }
 
-export function fromDocumentToComponentOption(referenceDocumentation: ReferenceDocumentation, position: vscode.Position, document: vscode.TextDocument) {
+export function fromDocumentToComponentOption(
+  referenceDocumentation: ReferenceDocumentation,
+  position: vscode.Position,
+  document: vscode.TextDocument
+) {
   const currentComponent = fromDocumentToComponent(referenceDocumentation, position, document);
 
   if (currentComponent) {
     const scanner = getScannerUnderCurrentCursorPosition(document, position);
-    if(scanner.getTokenType() == TokenType.AttributeValue) {
-
+    if (scanner.getTokenType() == TokenType.AttributeValue) {
     }
-    // const currentWordRange = document.getWordRangeAtPosition(position, )
   }
 }
 
-export function getAllComponentsSymbol(referenceDocumentation: ReferenceDocumentation, document: vscode.TextDocument): vscode.SymbolInformation[] {
+export function getAllComponentsSymbol(
+  referenceDocumentation: ReferenceDocumentation,
+  document: vscode.TextDocument
+): vscode.SymbolInformation[] {
   const transformedDoc = transformTextDocumentApi(document);
   const htmlDoc = htmlLangService.parseHTMLDocument(transformedDoc);
   // This needs to be done because there's an incompatibility between the htmllanguage service type and the latest d.ts for VS code API
@@ -39,10 +44,7 @@ export function getAllComponentsSymbol(referenceDocumentation: ReferenceDocument
   });
 }
 
-export function getCurrentSymbol(
-  position: vscode.Position,
-  document: vscode.TextDocument
-) {
+export function getCurrentSymbol(position: vscode.Position, document: vscode.TextDocument) {
   const transformedDoc = transformTextDocumentApi(document);
   const htmlDoc = htmlLangService.parseHTMLDocument(transformedDoc);
   const symbols = htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc);
@@ -78,7 +80,7 @@ function getScannerUnderCurrentCursorPosition(document: vscode.TextDocument, pos
 
   let doScan = scanner.scan();
   while (doScan != TokenType.EOS) {
-    if ((scanner.getTokenOffset() + scanner.getTokenLength()) < cursorOffsetInSymbol) {
+    if (scanner.getTokenOffset() + scanner.getTokenLength() < cursorOffsetInSymbol) {
       doScan = scanner.scan();
     } else {
       break;
@@ -87,10 +89,6 @@ function getScannerUnderCurrentCursorPosition(document: vscode.TextDocument, pos
   return scanner;
 }
 
-function getScannerPointToComponentOption(scanner: Scanner, document: vscode.TextDocument) {
-  
-}
+function getScannerPointToComponentOption(scanner: Scanner, document: vscode.TextDocument) {}
 
-function getTokenTypeUnderCursor(document: vscode.TextDocument, position: vscode.Position) {
-
-}
+function getTokenTypeUnderCursor(document: vscode.TextDocument, position: vscode.Position) {}

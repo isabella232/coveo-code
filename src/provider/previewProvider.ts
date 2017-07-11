@@ -20,10 +20,7 @@ export class PreviewProvider implements vscode.TextDocumentContentProvider {
         vscode.window.activeTextEditor.document
       );
       if (currentComponent) {
-        const currentSymbol = getCurrentSymbol(
-          currentPosition,
-          vscode.window.activeTextEditor.document
-        );
+        const currentSymbol = getCurrentSymbol(currentPosition, vscode.window.activeTextEditor.document);
         const currentRange = new vscode.Range(currentSymbol.location.range.start, currentSymbol.location.range.end);
         const currentHTml = vscode.window.activeTextEditor.document.getText(currentRange);
         resolve(

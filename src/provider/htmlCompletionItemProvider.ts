@@ -40,7 +40,7 @@ export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider
                 completeScan,
                 scan => scan.attributeName == `${ReferenceDocumentation.camelCaseToHyphen(option.name)}`
               );
-              return existInScan != null;
+              return existInScan == null;
             })
             .map(option => new ComponentOption(option))
             .value();

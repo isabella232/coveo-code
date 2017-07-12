@@ -3,54 +3,69 @@ import { IDocumentation, ReferenceDocumentation } from '../referenceDocumentatio
 import * as htmlToText from 'html-to-text';
 import * as _ from 'lodash';
 
+interface ICompletionProvider {
+  completionToUse: new (possibleValue: string[], optionDocumentation: IDocumentation) => vscode.CompletionItem;
+  valuesToUse: string[];
+}
+
 export class ComponentOptionValues {
-  private possibleValues: string[];
+  private completionProvider: ICompletionProvider;
+  private constrainValues: boolean;
   constructor(public componentOptionDocumentation: IDocumentation) {
-    if (!_.isEmpty(componentOptionDocumentation.constrainedValues)) {
-      this.possibleValues = componentOptionDocumentation.constrainedValues;
-    } else {
-      this.possibleValues = this.getMarkupValueExampleFromType();
-    }
+    this.completionProvider = this.determineCompletionProviderFromType();
   }
 
   public getCompletions(): vscode.CompletionItem[] {
-    if (!_.isEmpty(this.componentOptionDocumentation.constrainedValues)) {
-      return this.possibleValues.map(
-        possibleValue => new CompletionItemForOptions(possibleValue, this.componentOptionDocumentation)
+    if (this.completionProvider.completionToUse == CompletionItemForOptions) {
+      return this.completionProvider.valuesToUse.map(
+        valueToUse => new this.completionProvider.completionToUse([valueToUse], this.componentOptionDocumentation)
       );
     } else {
-      return [new CompletionItemForOptionsWithExamples(this.possibleValues, this.componentOptionDocumentation)];
+      return [
+        new this.completionProvider.completionToUse(
+          this.completionProvider.valuesToUse,
+          this.componentOptionDocumentation
+        )
+      ];
     }
   }
 
-  private getMarkupValueExampleFromType(): string[] {
-    let ret = [];
+  private determineCompletionProviderFromType(): ICompletionProvider {
     if (this.componentOptionDocumentation.type) {
       switch (this.componentOptionDocumentation.type.toLowerCase()) {
         case 'boolean':
-          ret = ['true', 'false'];
-          break;
+          return {
+            completionToUse: CompletionItemForOptions,
+            valuesToUse: ['true', 'false']
+          };
         case 'string':
-          ret = ['foo'];
-          break;
+          return {
+            completionToUse: CompletionItemForOptionsWithExamples,
+            valuesToUse: ['foo', 'bar']
+          };
         case 'ifieldoption':
-          ret = ['@foo'];
-          break;
+          return {
+            completionToUse: CompletionItemForOptionsWithExamples,
+            valuesToUse: ['@foo', '@bar']
+          };
         case 'number':
-          ret = ['1', '2', '3'];
-          break;
+          return {
+            completionToUse: CompletionItemForOptionsWithExamples,
+            valuesToUse: ['1', '2', '3']
+          };
         default:
-          ret = ['foo'];
-          break;
+          return {
+            completionToUse: CompletionItemForOptionsWithExamples,
+            valuesToUse: ['foo']
+          };
       }
     }
-    return ret;
   }
 }
 
 class CompletionItemForOptions extends vscode.CompletionItem {
-  constructor(public possibleValue: string, public optionDocumentation: IDocumentation) {
-    super(possibleValue, vscode.CompletionItemKind.TypeParameter);
+  constructor(public possibleValues: string[], public optionDocumentation: IDocumentation) {
+    super(possibleValues[0], vscode.CompletionItemKind.TypeParameter);
     this.documentation = htmlToText.fromString(optionDocumentation.comment, {
       ignoreHref: true,
       wordwrap: null,

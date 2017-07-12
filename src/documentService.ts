@@ -14,7 +14,7 @@ export function fromDocumentToComponent(
   const htmlDoc = htmlLangService.parseHTMLDocument(transformedDoc);
   const symbols = htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc);
   const currentSymbol = _getCurrentSymbol(<any>symbols, position);
-  return referenceDocumentation.getComponent(currentSymbol);
+  return referenceDocumentation.getDocumentation(currentSymbol);
 }
 
 export function fromDocumentToComponentOption(
@@ -66,7 +66,7 @@ export function getAllComponentsSymbol(
   // This needs to be done because there's an incompatibility between the htmllanguage service type and the latest d.ts for VS code API
   const symbols = <any>htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc);
   return _.filter(symbols, (symbol: vscode.SymbolInformation) => {
-    return referenceDocumentation.getComponent(symbol) != null;
+    return referenceDocumentation.getDocumentation(symbol) != null;
   });
 }
 
@@ -75,6 +75,62 @@ export function getCurrentSymbol(position: vscode.Position, document: vscode.Tex
   const htmlDoc = htmlLangService.parseHTMLDocument(transformedDoc);
   const symbols = htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc);
   return _getCurrentSymbol(<any>symbols, position);
+}
+
+export function doCompleteScanOfSymbol(
+  symbol: vscode.SymbolInformation,
+  document: vscode.TextDocument,
+  currentCursorOffset: number = 0
+) {
+  const scanner = htmlLangService.createScanner(document.getText(_createRange(symbol.location.range)));
+  const currentSymbolOffset = document.offsetAt(_createRange(symbol.location.range).start);
+
+  let cursorOffsetInSymbol = currentCursorOffset - currentSymbolOffset;
+  const completeScanOfAttributeValues: IScanOfAttributeValue[] = [];
+  let doScan = scanner.scan();
+  while (doScan != TokenType.StartTagClose) {
+    if (scanner.getTokenType() == TokenType.AttributeName) {
+      const beginningOfAttributeNameOffset = scanner.getTokenOffset();
+      const attributeName = scanner.getTokenText();
+      let attributeValue = '';
+      let activeUnderCursor = false;
+      doScan = scanner.scan();
+      if (scanner.getTokenType() == TokenType.DelimiterAssign) {
+        doScan = scanner.scan();
+        if (scanner.getTokenType() == TokenType.AttributeValue) {
+          attributeValue = scanner.getTokenText();
+          if (
+            scanner.getTokenOffset() + scanner.getTokenLength() >= cursorOffsetInSymbol &&
+            scanner.getTokenOffset() <= cursorOffsetInSymbol
+          ) {
+            activeUnderCursor = true;
+          }
+        }
+      }
+
+      const scanOfAttributeValues = {
+        attributeName: attributeName,
+        attributeValue: attributeValue,
+        activeUnderCursor: activeUnderCursor,
+        rangeInDocument: new vscode.Range(
+          document.positionAt(beginningOfAttributeNameOffset + currentSymbolOffset),
+          document.positionAt(scanner.getTokenOffset() + currentSymbolOffset + scanner.getTokenLength())
+        )
+      };
+      completeScanOfAttributeValues.push(scanOfAttributeValues);
+    }
+    doScan = scanner.scan();
+  }
+  return completeScanOfAttributeValues;
+}
+
+export function doCompleteScanOfCurrentSymbol(
+  document: vscode.TextDocument,
+  position: vscode.Position
+): IScanOfAttributeValue[] {
+  const currentSymbol = getCurrentSymbol(position, document);
+  const currentCursorOffset = document.offsetAt(position);
+  return doCompleteScanOfSymbol(currentSymbol, document, currentCursorOffset);
 }
 
 function transformTextDocumentApi(document: vscode.TextDocument) {
@@ -100,6 +156,7 @@ interface IScanOfAttributeValue {
   attributeName: string;
   attributeValue: string;
   activeUnderCursor: boolean;
+  rangeInDocument: vscode.Range;
 }
 
 function getScanOfActiveAttributeValue(
@@ -107,46 +164,4 @@ function getScanOfActiveAttributeValue(
   position: vscode.Position
 ): IScanOfAttributeValue {
   return _.find(doCompleteScanOfCurrentSymbol(document, position), scan => scan.activeUnderCursor);
-}
-
-function doCompleteScanOfCurrentSymbol(
-  document: vscode.TextDocument,
-  position: vscode.Position
-): IScanOfAttributeValue[] {
-  const currentSymbol = getCurrentSymbol(position, document);
-  const scanner = htmlLangService.createScanner(document.getText(_createRange(currentSymbol.location.range)));
-  const currentCursorOffset = document.offsetAt(position);
-  const currentSymbolOffset = document.offsetAt(_createRange(currentSymbol.location.range).start);
-
-  let cursorOffsetInSymbol = currentCursorOffset - currentSymbolOffset;
-  const completeScanOfAttributeValues: IScanOfAttributeValue[] = [];
-  let doScan = scanner.scan();
-  while (doScan != TokenType.EOS) {
-    if (scanner.getTokenType() == TokenType.AttributeName) {
-      const attributeName = scanner.getTokenText();
-      let attributeValue = '';
-      let activeUnderCursor = false;
-      doScan = scanner.scan();
-      if (scanner.getTokenType() == TokenType.DelimiterAssign) {
-        doScan = scanner.scan();
-        if (scanner.getTokenType() == TokenType.AttributeValue) {
-          attributeValue = scanner.getTokenText();
-          if (
-            scanner.getTokenOffset() + scanner.getTokenLength() >= cursorOffsetInSymbol &&
-            scanner.getTokenOffset() <= cursorOffsetInSymbol
-          ) {
-            activeUnderCursor = true;
-          }
-        }
-      }
-      const scanOfAttributeValues = {
-        attributeName: attributeName,
-        attributeValue: attributeValue,
-        activeUnderCursor: activeUnderCursor
-      };
-      completeScanOfAttributeValues.push(scanOfAttributeValues);
-    }
-    doScan = scanner.scan();
-  }
-  return completeScanOfAttributeValues;
 }

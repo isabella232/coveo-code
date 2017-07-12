@@ -25,7 +25,7 @@ export class ReferenceDocumentation {
     return `data-${optionName.replace(camelCaseToHyphenRegex, '-$1$2').toLowerCase()}`;
   }
 
-  public getComponent(symbol: vscode.SymbolInformation): IDocumentation {
+  public getDocumentation(symbol: vscode.SymbolInformation): IDocumentation {
     const allComponents = _.keys(ReferenceDocumentation.documentations);
     const componentFound = _.find(allComponents, (component: string) => {
       if (symbol.name) {

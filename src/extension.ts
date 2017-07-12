@@ -5,6 +5,7 @@ import { ReferenceDocumentation } from './referenceDocumentation';
 import { CodeLensProvider } from './provider/codeLensProvider';
 import { HTMLCompletionItemProvider } from './provider/htmlCompletionItemProvider';
 import { PreviewProvider } from './provider/previewProvider';
+import { DiagnosticProvider } from './provider/diagnosticProvider';
 
 const refererenceDocumentation = new ReferenceDocumentation();
 
@@ -12,11 +13,18 @@ export function activate(context: vscode.ExtensionContext) {
   provideCompletionForMarkup(context);
   provideCodeLensForMarkup(context);
   providePreviewForComponents(context);
+  provideDiagnosticsForMarkup(context);
 }
 
 function provideDiagnosticsForMarkup(context: vscode.ExtensionContext) {
-  const diagnostics = vscode.languages.createDiagnosticCollection('html');
-  context.subscriptions.push(diagnostics);
+  const diagnosticsCollection = vscode.languages.createDiagnosticCollection('html');
+  const diagnosticProvider = new DiagnosticProvider(diagnosticsCollection, refererenceDocumentation);
+  vscode.workspace.onDidChangeTextDocument((e: vscode.TextDocumentChangeEvent) => {
+    if (e.document === vscode.window.activeTextEditor.document) {
+      diagnosticProvider.updateDiagnostics(e.document);
+    }
+  });
+  context.subscriptions.push(diagnosticsCollection);
 }
 
 function provideCompletionForMarkup(context: vscode.ExtensionContext) {

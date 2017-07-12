@@ -14,14 +14,14 @@ export class CodeLensProvider implements vscode.CodeLensProvider {
       const allComponentsSymbols = getAllComponentsSymbol(this.referenceDocumentation, document);
       let resolves: vscode.CodeLens[] = [];
       const onlineDoc = _.map(allComponentsSymbols, (componentSymbol: vscode.SymbolInformation) => {
-        const componentInfo = this.referenceDocumentation.getComponent(componentSymbol);
+        const componentInfo = this.referenceDocumentation.getDocumentation(componentSymbol);
         return new vscode.CodeLens(componentSymbol.location.range, {
           title: `Coveo online documentation...`,
           command: 'vscode.open',
           arguments: [
             vscode.Uri.parse(
               `https://coveo.github.io/search-ui/components/${this.referenceDocumentation
-                .getComponent(componentSymbol)
+                .getDocumentation(componentSymbol)
                 .name.toLowerCase()}.html`
             )
           ],
@@ -30,14 +30,14 @@ export class CodeLensProvider implements vscode.CodeLensProvider {
       });
 
       const previewHtml = _.map(allComponentsSymbols, (componentSymbol: vscode.SymbolInformation) => {
-        const componentInfo = this.referenceDocumentation.getComponent(componentSymbol);
+        const componentInfo = this.referenceDocumentation.getDocumentation(componentSymbol);
         return new vscode.CodeLens(componentSymbol.location.range, {
           title: `Live preview`,
           command: 'vscode.previewHtml',
           arguments: [
             vscode.Uri.parse(
               `https://coveo.github.io/search-ui/components/${this.referenceDocumentation
-                .getComponent(componentSymbol)
+                .getDocumentation(componentSymbol)
                 .name.toLowerCase()}.html`
             )
           ],

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { IDocumentation, ReferenceDocumentation } from "../referenceDocumentation";
+import { IDocumentation, ReferenceDocumentation } from '../referenceDocumentation';
 import * as htmlToText from 'html-to-text';
 
 export class ComponentOption extends vscode.CompletionItem {

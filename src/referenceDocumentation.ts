@@ -1,8 +1,6 @@
 import * as _ from 'lodash';
 import * as vscode from 'vscode';
 
-
-
 export interface IDocumentation {
   name: string;
   comment: string;

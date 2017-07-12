@@ -1,12 +1,17 @@
 import * as vscode from 'vscode';
 import * as _ from 'lodash';
 import { ReferenceDocumentation, IDocumentation } from '../referenceDocumentation';
-import { fromDocumentToComponent, getCurrentSymbol, fromDocumentToComponentOption, isOptionAlreadySetOnComponent } from '../documentService';
+import {
+  fromDocumentToComponent,
+  getCurrentSymbol,
+  fromDocumentToComponentOption,
+  isOptionAlreadySetOnComponent
+} from '../documentService';
 import { ComponentOptionValues } from '../completionItems/ComponentOptionValues';
-import { ComponentOption } from "../completionItems/ComponentOption";
+import { ComponentOption } from '../completionItems/ComponentOption';
 
 export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider {
-  constructor(public referenceDocumentation: ReferenceDocumentation) { }
+  constructor(public referenceDocumentation: ReferenceDocumentation) {}
   public provideCompletionItems(
     document: vscode.TextDocument,
     position: vscode.Position,
@@ -15,10 +20,16 @@ export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider
     return new Promise<vscode.CompletionItem[]>((resolve, reject) => {
       let completionItems: vscode.CompletionItem[] = [];
 
-      const possibleCurrentOptionActive = fromDocumentToComponentOption(this.referenceDocumentation, position, document);
+      const possibleCurrentOptionActive = fromDocumentToComponentOption(
+        this.referenceDocumentation,
+        position,
+        document
+      );
 
       if (possibleCurrentOptionActive) {
-        completionItems = completionItems.concat(new ComponentOptionValues(possibleCurrentOptionActive).getCompletions());
+        completionItems = completionItems.concat(
+          new ComponentOptionValues(possibleCurrentOptionActive).getCompletions()
+        );
       } else {
         const currentComponent = fromDocumentToComponent(this.referenceDocumentation, position, document);
         if (currentComponent) {

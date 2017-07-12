@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { IDocumentation, ReferenceDocumentation } from "../referenceDocumentation";
+import { IDocumentation, ReferenceDocumentation } from '../referenceDocumentation';
 import * as htmlToText from 'html-to-text';
 import * as _ from 'lodash';
 
@@ -15,7 +15,9 @@ export class ComponentOptionValues {
 
   public getCompletions(): vscode.CompletionItem[] {
     if (!_.isEmpty(this.componentOptionDocumentation.constrainedValues)) {
-      return this.possibleValues.map(possibleValue => new CompletionItemForOptions(possibleValue, this.componentOptionDocumentation));
+      return this.possibleValues.map(
+        possibleValue => new CompletionItemForOptions(possibleValue, this.componentOptionDocumentation)
+      );
     } else {
       return [new CompletionItemForOptionsWithExamples(this.possibleValues, this.componentOptionDocumentation)];
     }
@@ -65,7 +67,7 @@ class CompletionItemForOptionsWithExamples extends vscode.CompletionItem {
     super(`Possible Coveo option values ...`, vscode.CompletionItemKind.TypeParameter);
     let htmlToTransform = ` <h1>Example(s) : </h1> <pre>${this.createMarkupExamples()}</pre> ${optionDocumentation.comment}`;
     if (optionDocumentation.type) {
-      this.detail = `Name : ${optionDocumentation.name} ; Type : ${optionDocumentation.type}`
+      this.detail = `Name : ${optionDocumentation.name} ; Type : ${optionDocumentation.type}`;
     }
     this.documentation = htmlToText.fromString(htmlToTransform, {
       ignoreHref: true,
@@ -77,6 +79,9 @@ class CompletionItemForOptionsWithExamples extends vscode.CompletionItem {
   }
 
   private createMarkupExamples(): string[] {
-    return this.possibleValues.map(possibleValue => `${ReferenceDocumentation.camelCaseToHyphen(this.optionDocumentation.name)}='${possibleValue}'<br/>`);
+    return this.possibleValues.map(
+      possibleValue =>
+        `${ReferenceDocumentation.camelCaseToHyphen(this.optionDocumentation.name)}='${possibleValue}'<br/>`
+    );
   }
 }

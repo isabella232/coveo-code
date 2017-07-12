@@ -49,12 +49,12 @@ function providePreviewForComponents(context: vscode.ExtensionContext) {
     return vscode.commands
       .executeCommand('vscode.showCoveoPreview', previewUri, vscode.ViewColumn.Two, 'Coveo Preview')
       .then(
-      success => {
-        console.log('success');
-      },
-      reason => {
-        vscode.window.showErrorMessage(reason);
-      }
+        success => {
+          console.log('success');
+        },
+        reason => {
+          vscode.window.showErrorMessage(reason);
+        }
       );
   });
   context.subscriptions.push(commandProvider, previewRegistration);

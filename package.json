@@ -48,7 +48,7 @@
         "write": "^1.0.3"
     },
     "dependencies": {
-        "coveo-search-ui": "2.x.x",
+        "coveo-search-ui": "^2.2900.14",
         "html-to-text": "^3.3.0",
         "lodash": "^4.17.4",
         "remove-markdown": "^0.1.0",

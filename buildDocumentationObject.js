@@ -12,7 +12,9 @@ const formattedDocumentations = _.chain(rawDocumentationJSON)
     return {
       name: doc.name,
       comment: doc.comment,
-      options: []
+      options: [],
+      type : doc.type,
+      constrainedValues: doc.constrainedValues
     };
   })
   .value();
@@ -25,7 +27,9 @@ formattedDocumentations.forEach((formattedDocumentation) => {
     if (isOption && isOption[1]) {
       const optFormatted = {
         name: isOption[1],
-        comment: rawComment.comment
+        comment: rawComment.comment,
+        type: rawComment.type,
+        constrainedValues: rawComment.constrainedValues
       };
       documentations[formattedDocumentation.name].options.push(optFormatted);
     }

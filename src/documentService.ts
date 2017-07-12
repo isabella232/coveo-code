@@ -21,14 +21,30 @@ export function fromDocumentToComponentOption(
   referenceDocumentation: ReferenceDocumentation,
   position: vscode.Position,
   document: vscode.TextDocument
-) {
+): IDocumentation {
   const currentComponent = fromDocumentToComponent(referenceDocumentation, position, document);
 
   if (currentComponent) {
-    const scanner = getScannerUnderCurrentCursorPosition(document, position);
-    if (scanner.getTokenType() == TokenType.AttributeValue) {
+    const currentActiveAttribute = getScanOfActiveAttributeValue(document, position);
+    if (currentActiveAttribute) {
+      const optionThatMatch = _.find(currentComponent.options, option => `${ReferenceDocumentation.camelCaseToHyphen(option.name)}` == currentActiveAttribute.attributeName);
+      if (optionThatMatch) {
+        return {
+          comment: optionThatMatch.comment,
+          name: optionThatMatch.name,
+          type: optionThatMatch.type,
+          options: [],
+          constrainedValues: optionThatMatch.constrainedValues
+        }
+      }
     }
   }
+}
+
+export function isOptionAlreadySetOnComponent(position: vscode.Position, document: vscode.TextDocument, option: IDocumentation) {
+  const completeScan = doCompleteScanOfCurrentSymbol(document, position);
+  const existInScan = _.find(completeScan, scan => scan.attributeName == `${ReferenceDocumentation.camelCaseToHyphen(option.name)}`);
+  return existInScan != null;
 }
 
 export function getAllComponentsSymbol(
@@ -70,25 +86,49 @@ function _createRange(oldRangeObject: vscode.Range) {
   return new vscode.Range(oldRangeObject.start, oldRangeObject.end);
 }
 
-function getScannerUnderCurrentCursorPosition(document: vscode.TextDocument, position: vscode.Position): Scanner {
+
+interface IScanOfAttributeValue {
+  attributeName: string;
+  attributeValue: string;
+  activeUnderCursor: boolean;
+}
+
+function getScanOfActiveAttributeValue(document: vscode.TextDocument, position: vscode.Position): IScanOfAttributeValue {
+  return _.find(doCompleteScanOfCurrentSymbol(document, position), scan => scan.activeUnderCursor);
+}
+
+function doCompleteScanOfCurrentSymbol(document: vscode.TextDocument, position: vscode.Position): IScanOfAttributeValue[] {
   const currentSymbol = getCurrentSymbol(position, document);
   const scanner = htmlLangService.createScanner(document.getText(_createRange(currentSymbol.location.range)));
   const currentCursorOffset = document.offsetAt(position);
   const currentSymbolOffset = document.offsetAt(_createRange(currentSymbol.location.range).start);
 
   let cursorOffsetInSymbol = currentCursorOffset - currentSymbolOffset;
-
+  const completeScanOfAttributeValues: IScanOfAttributeValue[] = [];
   let doScan = scanner.scan();
   while (doScan != TokenType.EOS) {
-    if (scanner.getTokenOffset() + scanner.getTokenLength() < cursorOffsetInSymbol) {
+    if (scanner.getTokenType() == TokenType.AttributeName) {
+      const attributeName = scanner.getTokenText();
+      let attributeValue = '';
+      let activeUnderCursor = false;
       doScan = scanner.scan();
-    } else {
-      break;
+      if (scanner.getTokenType() == TokenType.DelimiterAssign) {
+        doScan = scanner.scan();
+        if (scanner.getTokenType() == TokenType.AttributeValue) {
+          attributeValue = scanner.getTokenText();
+          if (scanner.getTokenOffset() + scanner.getTokenLength() >= cursorOffsetInSymbol && scanner.getTokenOffset() <= cursorOffsetInSymbol) {
+            activeUnderCursor = true;
+          }
+        }
+      }
+      const scanOfAttributeValues = {
+        attributeName: attributeName,
+        attributeValue: attributeValue,
+        activeUnderCursor: activeUnderCursor
+      }
+      completeScanOfAttributeValues.push(scanOfAttributeValues);
     }
+    doScan = scanner.scan()
   }
-  return scanner;
+  return completeScanOfAttributeValues;
 }
-
-function getScannerPointToComponentOption(scanner: Scanner, document: vscode.TextDocument) {}
-
-function getTokenTypeUnderCursor(document: vscode.TextDocument, position: vscode.Position) {}

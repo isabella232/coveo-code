@@ -14,6 +14,11 @@ export function activate(context: vscode.ExtensionContext) {
   providePreviewForComponents(context);
 }
 
+function provideDiagnosticsForMarkup(context: vscode.ExtensionContext) {
+  const diagnostics = vscode.languages.createDiagnosticCollection('html');
+  context.subscriptions.push(diagnostics);
+}
+
 function provideCompletionForMarkup(context: vscode.ExtensionContext) {
   const htmlCompletionProvider = vscode.languages.registerCompletionItemProvider(
     'html',
@@ -44,12 +49,12 @@ function providePreviewForComponents(context: vscode.ExtensionContext) {
     return vscode.commands
       .executeCommand('vscode.showCoveoPreview', previewUri, vscode.ViewColumn.Two, 'Coveo Preview')
       .then(
-        success => {
-          console.log('success');
-        },
-        reason => {
-          vscode.window.showErrorMessage(reason);
-        }
+      success => {
+        console.log('success');
+      },
+      reason => {
+        vscode.window.showErrorMessage(reason);
+      }
       );
   });
   context.subscriptions.push(commandProvider, previewRegistration);

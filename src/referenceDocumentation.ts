@@ -1,13 +1,14 @@
 import * as _ from 'lodash';
 import * as vscode from 'vscode';
 
-interface IRawComponentComment {
+
+
+export interface IDocumentation {
   name: string;
   comment: string;
-}
-
-export interface IDocumentation extends IRawComponentComment {
-  options: IRawComponentComment[];
+  type?: string;
+  constrainedValues?: string[];
+  options: IDocumentation[];
 }
 
 const documentationJSON: { [component: string]: IDocumentation } = require('../data/documentation.json');
@@ -19,6 +20,11 @@ export class ReferenceDocumentation {
     if (ReferenceDocumentation.documentations == null) {
       ReferenceDocumentation.documentations = documentationJSON;
     }
+  }
+
+  public static camelCaseToHyphen(optionName: string) {
+    const camelCaseToHyphenRegex = /([A-Z])|\W+(\w)/g;
+    return `data-${optionName.replace(camelCaseToHyphenRegex, '-$1$2').toLowerCase()}`;
   }
 
   public getComponent(symbol: vscode.SymbolInformation): IDocumentation {

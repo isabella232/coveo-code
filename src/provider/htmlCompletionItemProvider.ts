@@ -5,7 +5,7 @@ import {
   fromDocumentToComponent,
   getCurrentSymbol,
   fromDocumentToComponentOption,
-  isOptionAlreadySetOnComponent
+  doCompleteScanOfCurrentSymbol
 } from '../documentService';
 import { ComponentOptionValues } from '../completionItems/ComponentOptionValues';
 import { ComponentOption } from '../completionItems/ComponentOption';
@@ -34,7 +34,14 @@ export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider
         const currentComponent = fromDocumentToComponent(this.referenceDocumentation, position, document);
         if (currentComponent) {
           const optionsCompletions: vscode.CompletionItem[] = _.chain(currentComponent.options)
-            .filter(option => !isOptionAlreadySetOnComponent(position, document, option))
+            .filter(option => {
+              const completeScan = doCompleteScanOfCurrentSymbol(document, position);
+              const existInScan = _.find(
+                completeScan,
+                scan => scan.attributeName == `${ReferenceDocumentation.camelCaseToHyphen(option.name)}`
+              );
+              return existInScan != null;
+            })
             .map(option => new ComponentOption(option))
             .value();
           completionItems = completionItems.concat(optionsCompletions);

@@ -44,19 +44,6 @@ export function fromDocumentToComponentOption(
   }
 }
 
-export function isOptionAlreadySetOnComponent(
-  position: vscode.Position,
-  document: vscode.TextDocument,
-  option: IDocumentation
-) {
-  const completeScan = doCompleteScanOfCurrentSymbol(document, position);
-  const existInScan = _.find(
-    completeScan,
-    scan => scan.attributeName == `${ReferenceDocumentation.camelCaseToHyphen(option.name)}`
-  );
-  return existInScan != null;
-}
-
 export function getAllComponentsSymbol(
   referenceDocumentation: ReferenceDocumentation,
   document: vscode.TextDocument
@@ -87,8 +74,15 @@ export function doCompleteScanOfSymbol(
 
   let cursorOffsetInSymbol = currentCursorOffset - currentSymbolOffset;
   const completeScanOfAttributeValues: IScanOfAttributeValue[] = [];
-  let doScan = scanner.scan();
-  while (doScan != TokenType.StartTagClose) {
+  let doScan: any = scanner.scan();
+  const shouldExitScan = () => {
+    return (
+      scanner.getTokenType() == TokenType.EOS ||
+      scanner.getTokenType() == TokenType.StartTagClose ||
+      scanner.getTokenType() == TokenType.StartTagSelfClose
+    );
+  };
+  while (!shouldExitScan()) {
     if (scanner.getTokenType() == TokenType.AttributeName) {
       const beginningOfAttributeNameOffset = scanner.getTokenOffset();
       const attributeName = scanner.getTokenText();
@@ -105,7 +99,11 @@ export function doCompleteScanOfSymbol(
           ) {
             activeUnderCursor = true;
           }
+        } else if (shouldExitScan()) {
+          break;
         }
+      } else if (shouldExitScan()) {
+        break;
       }
 
       const scanOfAttributeValues = {

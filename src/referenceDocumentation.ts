@@ -6,6 +6,7 @@ export interface IDocumentation {
   comment: string;
   type?: string;
   constrainedValues?: string[];
+  miscAttributes?: { [key: string]: string };
   options: IDocumentation[];
 }
 
@@ -15,9 +16,12 @@ export class ReferenceDocumentation {
   private static documentations: { [component: string]: IDocumentation };
 
   constructor() {
+    console.log('YO');
+    console.log(ReferenceDocumentation.documentations);
     if (ReferenceDocumentation.documentations == null) {
       ReferenceDocumentation.documentations = documentationJSON;
     }
+    console.log(this.getFromTree('Facet').options);
   }
 
   public static camelCaseToHyphen(optionName: string) {

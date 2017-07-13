@@ -31,15 +31,7 @@ export function fromDocumentToComponentOption(
         currentComponent.options,
         option => `${ReferenceDocumentation.camelCaseToHyphen(option.name)}` == currentActiveAttribute.attributeName
       );
-      if (optionThatMatch) {
-        return {
-          comment: optionThatMatch.comment,
-          name: optionThatMatch.name,
-          type: optionThatMatch.type,
-          options: [],
-          constrainedValues: optionThatMatch.constrainedValues
-        };
-      }
+      return optionThatMatch;
     }
   }
 }

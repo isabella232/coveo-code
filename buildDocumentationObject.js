@@ -13,8 +13,9 @@ const formattedDocumentations = _.chain(rawDocumentationJSON)
       name: doc.name,
       comment: doc.comment,
       options: [],
-      type : doc.type,
-      constrainedValues: doc.constrainedValues
+      type: doc.type,
+      constrainedValues: doc.constrainedValues,
+      miscAttributes: doc.miscAttributes || {}
     };
   })
   .value();
@@ -29,7 +30,8 @@ formattedDocumentations.forEach((formattedDocumentation) => {
         name: isOption[1],
         comment: rawComment.comment,
         type: rawComment.type,
-        constrainedValues: rawComment.constrainedValues
+        constrainedValues: rawComment.constrainedValues,
+        miscAttributes: rawComment.miscAttributes || {}
       };
       documentations[formattedDocumentation.name].options.push(optFormatted);
     }

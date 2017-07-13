@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as _ from 'lodash';
 import { getAllComponentsSymbol, doCompleteScanOfSymbol } from '../documentService';
-import { ReferenceDocumentation } from '../referenceDocumentation';
+import { ReferenceDocumentation, IDocumentation } from '../referenceDocumentation';
 
 export class DiagnosticProvider {
   constructor(
@@ -17,6 +17,9 @@ export class DiagnosticProvider {
       const component = this.referenceDocumentation.getDocumentation(componentSymbol);
       if (component && component.options) {
         allDiagnostics = allDiagnostics.concat(this.diagnoseDuplicateOptions(document, componentSymbol));
+        allDiagnostics = allDiagnostics.concat(
+          this.diagnoseMissingRequiredOptions(document, componentSymbol, component)
+        );
       }
     });
     this.diagnosticCollection.set(document.uri, allDiagnostics);
@@ -36,6 +39,39 @@ export class DiagnosticProvider {
           return new vscode.Diagnostic(
             duplicate.rangeInDocument,
             'Remove duplicate option inside the same component.',
+            vscode.DiagnosticSeverity.Error
+          );
+        })
+      );
+    }
+    return allDiagnostics;
+  }
+
+  private diagnoseMissingRequiredOptions(
+    document: vscode.TextDocument,
+    componentSymbol: vscode.SymbolInformation,
+    component: IDocumentation
+  ) {
+    let allDiagnostics: vscode.Diagnostic[] = [];
+    const requiredOptions = _.filter(component.options, option => option.miscAttributes['required'] == 'true');
+    if (!_.isEmpty(requiredOptions)) {
+      const completeScan = doCompleteScanOfSymbol(componentSymbol, document);
+      let isMissingAtLeastOneRequiredOption = false;
+      const missingRequiredOptions = requiredOptions.filter(requiredOption => {
+        return (
+          _.find(
+            completeScan,
+            scan => scan.attributeName == ReferenceDocumentation.camelCaseToHyphen(requiredOption.name)
+          ) == null
+        );
+      });
+      allDiagnostics = allDiagnostics.concat(
+        missingRequiredOptions.map(missingRequiredOption => {
+          return new vscode.Diagnostic(
+            componentSymbol.location.range,
+            `The option ${missingRequiredOption.name} is required. Markup value is ${ReferenceDocumentation.camelCaseToHyphen(
+              missingRequiredOption.name
+            )}`,
             vscode.DiagnosticSeverity.Error
           );
         })

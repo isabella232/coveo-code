@@ -20,16 +20,10 @@ export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider
     return new Promise<vscode.CompletionItem[]>((resolve, reject) => {
       let completionItems: vscode.CompletionItem[] = [];
 
-      const possibleCurrentOptionActive = fromDocumentToComponentOption(
-        this.referenceDocumentation,
-        position,
-        document
-      );
+      const possibleCurrentOptionActive = fromDocumentToComponentOption(this.referenceDocumentation, position, document);
 
       if (possibleCurrentOptionActive) {
-        completionItems = completionItems.concat(
-          new ComponentOptionValues(possibleCurrentOptionActive).getCompletions()
-        );
+        completionItems = completionItems.concat(new ComponentOptionValues(possibleCurrentOptionActive).getCompletions());
       } else {
         const currentComponent = fromDocumentToComponent(this.referenceDocumentation, position, document);
         if (currentComponent) {

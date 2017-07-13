@@ -56,11 +56,7 @@ export function getCurrentSymbol(position: vscode.Position, document: vscode.Tex
   return _getCurrentSymbol(<any>symbols, position);
 }
 
-export function doCompleteScanOfSymbol(
-  symbol: vscode.SymbolInformation,
-  document: vscode.TextDocument,
-  currentCursorOffset: number = 0
-) {
+export function doCompleteScanOfSymbol(symbol: vscode.SymbolInformation, document: vscode.TextDocument, currentCursorOffset: number = 0) {
   const scanner = htmlLangService.createScanner(document.getText(_createRange(symbol.location.range)));
   const currentSymbolOffset = document.offsetAt(_createRange(symbol.location.range).start);
 
@@ -91,10 +87,13 @@ export function doCompleteScanOfSymbol(
           ) {
             activeUnderCursor = true;
           }
-        } else if (shouldExitScan()) {
+        }
+        // Need to exit early if we scanned too far while trying to match an attribute with it's value
+        if (shouldExitScan()) {
           break;
         }
-      } else if (shouldExitScan()) {
+      }
+      if (shouldExitScan()) {
         break;
       }
 
@@ -114,10 +113,7 @@ export function doCompleteScanOfSymbol(
   return completeScanOfAttributeValues;
 }
 
-export function doCompleteScanOfCurrentSymbol(
-  document: vscode.TextDocument,
-  position: vscode.Position
-): IScanOfAttributeValue[] {
+export function doCompleteScanOfCurrentSymbol(document: vscode.TextDocument, position: vscode.Position): IScanOfAttributeValue[] {
   const currentSymbol = getCurrentSymbol(position, document);
   const currentCursorOffset = document.offsetAt(position);
   return doCompleteScanOfSymbol(currentSymbol, document, currentCursorOffset);
@@ -149,9 +145,6 @@ interface IScanOfAttributeValue {
   rangeInDocument: vscode.Range;
 }
 
-function getScanOfActiveAttributeValue(
-  document: vscode.TextDocument,
-  position: vscode.Position
-): IScanOfAttributeValue {
+function getScanOfActiveAttributeValue(document: vscode.TextDocument, position: vscode.Position): IScanOfAttributeValue {
   return _.find(doCompleteScanOfCurrentSymbol(document, position), scan => scan.activeUnderCursor);
 }

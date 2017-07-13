@@ -20,12 +20,7 @@ export class ComponentOptionValues {
         valueToUse => new this.completionProvider.completionToUse([valueToUse], this.componentOptionDocumentation)
       );
     } else {
-      return [
-        new this.completionProvider.completionToUse(
-          this.completionProvider.valuesToUse,
-          this.componentOptionDocumentation
-        )
-      ];
+      return [new this.completionProvider.completionToUse(this.completionProvider.valuesToUse, this.componentOptionDocumentation)];
     }
   }
 
@@ -39,10 +34,7 @@ export class ComponentOptionValues {
         valuesToUse: this.componentOptionDocumentation.constrainedValues
       };
     }
-    if (
-      this.componentOptionDocumentation.miscAttributes &&
-      this.componentOptionDocumentation.miscAttributes['defaultValue']
-    ) {
+    if (this.componentOptionDocumentation.miscAttributes && this.componentOptionDocumentation.miscAttributes['defaultValue']) {
       return {
         completionToUse: CompletionItemForOptionsWithExamples,
         valuesToUse: [this.componentOptionDocumentation.miscAttributes['defaultValue']]
@@ -135,8 +127,7 @@ class CompletionItemForOptionsWithExamples extends vscode.CompletionItem {
 
   private createMarkupExamples(): string[] {
     return this.possibleValues.map(
-      possibleValue =>
-        `${ReferenceDocumentation.camelCaseToHyphen(this.optionDocumentation.name)}='${possibleValue}'<br/>`
+      possibleValue => `${ReferenceDocumentation.camelCaseToHyphen(this.optionDocumentation.name)}='${possibleValue}'<br/>`
     );
   }
 }

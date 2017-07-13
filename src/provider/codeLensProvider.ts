@@ -6,10 +6,7 @@ import * as _ from 'lodash';
 export class CodeLensProvider implements vscode.CodeLensProvider {
   constructor(public referenceDocumentation: ReferenceDocumentation) {}
 
-  public provideCodeLenses(
-    document: vscode.TextDocument,
-    token: vscode.CancellationToken
-  ): Thenable<vscode.CodeLens[]> {
+  public provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken): Thenable<vscode.CodeLens[]> {
     return new Promise((resolve, reject) => {
       const allComponentsSymbols = getAllComponentsSymbol(this.referenceDocumentation, document);
       let resolves: vscode.CodeLens[] = [];
@@ -50,10 +47,7 @@ export class CodeLensProvider implements vscode.CodeLensProvider {
     });
   }
 
-  public resolveCodeLens?(
-    codeLens: vscode.CodeLens,
-    token: vscode.CancellationToken
-  ): vscode.ProviderResult<vscode.CodeLens> {
+  public resolveCodeLens?(codeLens: vscode.CodeLens, token: vscode.CancellationToken): vscode.ProviderResult<vscode.CodeLens> {
     return null;
   }
 }

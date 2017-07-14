@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { IDocumentation, ReferenceDocumentation } from '../referenceDocumentation';
 import * as htmlToText from 'html-to-text';
 import * as _ from 'lodash';
+import { CompletionItemForOptions } from './completionItemForOptions';
+import { CompletionItemForOptionsWithExamples } from './completionItemForOptionsWithExamples';
 
 interface ICompletionProvider {
   completionToUse: new (possibleValue: string[], optionDocumentation: IDocumentation) => vscode.CompletionItem;
@@ -20,7 +22,12 @@ export class ComponentOptionValues {
         valueToUse => new this.completionProvider.completionToUse([valueToUse], this.componentOptionDocumentation)
       );
     } else {
-      return [new this.completionProvider.completionToUse(this.completionProvider.valuesToUse, this.componentOptionDocumentation)];
+      return [
+        new this.completionProvider.completionToUse(
+          this.completionProvider.valuesToUse,
+          this.componentOptionDocumentation
+        )
+      ];
     }
   }
 
@@ -34,10 +41,13 @@ export class ComponentOptionValues {
         valuesToUse: this.componentOptionDocumentation.constrainedValues
       };
     }
-    if (this.componentOptionDocumentation.miscAttributes && this.componentOptionDocumentation.miscAttributes['defaultValue']) {
+    if (
+      this.componentOptionDocumentation.miscAttributes &&
+      this.componentOptionDocumentation.miscAttributes.defaultValue
+    ) {
       return {
         completionToUse: CompletionItemForOptionsWithExamples,
-        valuesToUse: [this.componentOptionDocumentation.miscAttributes['defaultValue']]
+        valuesToUse: [this.componentOptionDocumentation.miscAttributes.defaultValue]
       };
     }
     return {
@@ -48,8 +58,8 @@ export class ComponentOptionValues {
 
   private determineCompletionProviderFromType() {
     const padDefaultValueWithFakeValues = (fakeValues: string[]): string[] => {
-      if (this.componentOptionDocumentation.miscAttributes['defaultValue']) {
-        return _.uniq([this.componentOptionDocumentation.miscAttributes['defaultValue']].concat(fakeValues));
+      if (this.componentOptionDocumentation.miscAttributes.defaultValue) {
+        return _.uniq([this.componentOptionDocumentation.miscAttributes.defaultValue].concat(fakeValues));
       }
       return fakeValues;
     };
@@ -86,48 +96,5 @@ export class ComponentOptionValues {
           valuesToUse: padDefaultValueWithFakeValues(['foo'])
         };
     }
-  }
-}
-
-class CompletionItemForOptions extends vscode.CompletionItem {
-  constructor(public possibleValues: string[], public optionDocumentation: IDocumentation) {
-    super(possibleValues[0], vscode.CompletionItemKind.TypeParameter);
-    this.documentation = htmlToText.fromString(optionDocumentation.comment, {
-      ignoreHref: true,
-      wordwrap: null,
-      preserveNewlines: true
-    });
-    if (optionDocumentation.type) {
-      this.detail = `Name : ${optionDocumentation.name} ; Type : ${optionDocumentation.type}`;
-    }
-  }
-}
-
-class CompletionItemForOptionsWithExamples extends vscode.CompletionItem {
-  constructor(public possibleValues: string[], public optionDocumentation: IDocumentation) {
-    super(`Possible Coveo option values ...`, vscode.CompletionItemKind.TypeParameter);
-    let htmlToTransform = ` <h1>Example(s) : </h1> <pre>${this.createMarkupExamples()}</pre> ${optionDocumentation.comment}`;
-    this.documentation = htmlToText.fromString(htmlToTransform, {
-      ignoreHref: true,
-      wordwrap: null,
-      preserveNewlines: true
-    });
-
-    if (optionDocumentation.type) {
-      this.detail = `Name : ${optionDocumentation.name} ; Type : ${optionDocumentation.type}`;
-    }
-
-    this.filterText = ' ';
-    if (optionDocumentation.miscAttributes['defaultValue']) {
-      this.insertText = optionDocumentation.miscAttributes['defaultValue'];
-    } else {
-      this.insertText = this.possibleValues[0];
-    }
-  }
-
-  private createMarkupExamples(): string[] {
-    return this.possibleValues.map(
-      possibleValue => `${ReferenceDocumentation.camelCaseToHyphen(this.optionDocumentation.name)}='${possibleValue}'<br/>`
-    );
   }
 }

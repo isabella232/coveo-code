@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { IDocumentation, ReferenceDocumentation } from '../referenceDocumentation';
+import { ReferenceDocumentation, IDocumentation } from '../referenceDocumentation';
 import * as htmlToText from 'html-to-text';
 
 export class ComponentOption extends vscode.CompletionItem {
@@ -7,8 +7,8 @@ export class ComponentOption extends vscode.CompletionItem {
     super(ReferenceDocumentation.camelCaseToHyphen(info.name) + ' (coveo)', vscode.CompletionItemKind.Keyword);
     this.documentation = htmlToText.fromString(info.comment, {
       ignoreHref: true,
-      wordwrap: null,
-      preserveNewlines: true
+      preserveNewlines: true,
+      wordwrap: null
     });
     this.insertText = ReferenceDocumentation.camelCaseToHyphen(info.name);
   }

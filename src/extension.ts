@@ -38,7 +38,10 @@ function provideCompletionForMarkup(context: vscode.ExtensionContext) {
 }
 
 function provideCodeLensForMarkup(context: vscode.ExtensionContext) {
-  const codeLensProvider = vscode.languages.registerCodeLensProvider('html', new CodeLensProvider(refererenceDocumentation));
+  const codeLensProvider = vscode.languages.registerCodeLensProvider(
+    'html',
+    new CodeLensProvider(refererenceDocumentation)
+  );
   context.subscriptions.push(codeLensProvider);
 }
 
@@ -53,14 +56,16 @@ function providePreviewForComponents(context: vscode.ExtensionContext) {
 
   const previewRegistration = vscode.workspace.registerTextDocumentContentProvider('coveo-preview', previewProvider);
   const commandProvider = vscode.commands.registerCommand('extension.showCoveoPreview', () => {
-    return vscode.commands.executeCommand('vscode.showCoveoPreview', previewUri, vscode.ViewColumn.Two, 'Coveo Preview').then(
-      success => {
-        console.log('success');
-      },
-      reason => {
-        vscode.window.showErrorMessage(reason);
-      }
-    );
+    return vscode.commands
+      .executeCommand('vscode.showCoveoPreview', previewUri, vscode.ViewColumn.Two, 'Coveo Preview')
+      .then(
+        success => {
+          console.log('success');
+        },
+        reason => {
+          vscode.window.showErrorMessage(reason);
+        }
+      );
   });
   context.subscriptions.push(commandProvider, previewRegistration);
 }

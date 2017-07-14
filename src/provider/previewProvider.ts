@@ -1,20 +1,20 @@
 import * as vscode from 'vscode';
 import { ReferenceDocumentation } from '../referenceDocumentation';
-import { fromDocumentToComponent, getCurrentSymbol } from '../documentService';
+import { getComponentAtPosition, getCurrentSymbol } from '../documentService';
 import * as _ from 'lodash';
 
 export class PreviewProvider implements vscode.TextDocumentContentProvider {
-  private _onDidChange = new vscode.EventEmitter<vscode.Uri>();
+  private onDidChangeInternal = new vscode.EventEmitter<vscode.Uri>();
 
   public constructor(public referenceDocumentation: ReferenceDocumentation) {}
   public provideTextDocumentContent(uri: vscode.Uri, token: vscode.CancellationToken): vscode.ProviderResult<string> {
-    let editor = vscode.window.activeTextEditor;
+    const editor = vscode.window.activeTextEditor;
     if (editor.document.languageId !== 'html') {
       return null;
     }
     return new Promise((resolve, reject) => {
       const currentPosition = vscode.window.activeTextEditor.selection.start;
-      const currentComponent = fromDocumentToComponent(
+      const currentComponent = getComponentAtPosition(
         this.referenceDocumentation,
         currentPosition,
         vscode.window.activeTextEditor.document
@@ -37,10 +37,10 @@ export class PreviewProvider implements vscode.TextDocumentContentProvider {
   }
 
   public update(uri: vscode.Uri) {
-    this._onDidChange.fire(uri);
+    this.onDidChangeInternal.fire(uri);
   }
 
   get onDidChange(): vscode.Event<vscode.Uri> {
-    return this._onDidChange.event;
+    return this.onDidChangeInternal.event;
   }
 }

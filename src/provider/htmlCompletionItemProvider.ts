@@ -2,9 +2,9 @@ import * as vscode from 'vscode';
 import * as _ from 'lodash';
 import { ReferenceDocumentation, IDocumentation } from '../referenceDocumentation';
 import {
-  fromDocumentToComponent,
+  getComponentAtPosition,
   getCurrentSymbol,
-  fromDocumentToComponentOption,
+  getOptionAtPosition,
   doCompleteScanOfCurrentSymbol
 } from '../documentService';
 import { ComponentOptionValues } from '../completionItems/ComponentOptionValues';
@@ -20,12 +20,14 @@ export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider
     return new Promise<vscode.CompletionItem[]>((resolve, reject) => {
       let completionItems: vscode.CompletionItem[] = [];
 
-      const possibleCurrentOptionActive = fromDocumentToComponentOption(this.referenceDocumentation, position, document);
+      const possibleCurrentOptionActive = getOptionAtPosition(this.referenceDocumentation, position, document);
 
       if (possibleCurrentOptionActive) {
-        completionItems = completionItems.concat(new ComponentOptionValues(possibleCurrentOptionActive).getCompletions());
+        completionItems = completionItems.concat(
+          new ComponentOptionValues(possibleCurrentOptionActive).getCompletions()
+        );
       } else {
-        const currentComponent = fromDocumentToComponent(this.referenceDocumentation, position, document);
+        const currentComponent = getComponentAtPosition(this.referenceDocumentation, position, document);
         if (currentComponent) {
           const optionsCompletions: vscode.CompletionItem[] = _.chain(currentComponent.options)
             .filter(option => {

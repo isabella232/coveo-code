@@ -13,8 +13,12 @@ export class OptionsDiagnostics {
       const component = this.referenceDocumentation.getDocumentation(componentSymbol);
       if (component && component.options) {
         allDiagnostics = allDiagnostics.concat(this.diagnoseDuplicateOptions(document, componentSymbol, component));
-        allDiagnostics = allDiagnostics.concat(this.diagnoseMissingRequiredOptions(document, componentSymbol, component));
-        allDiagnostics = allDiagnostics.concat(this.diagnoseInvalidConstrainedValues(document, componentSymbol, component));
+        allDiagnostics = allDiagnostics.concat(
+          this.diagnoseMissingRequiredOptions(document, componentSymbol, component)
+        );
+        allDiagnostics = allDiagnostics.concat(
+          this.diagnoseInvalidConstrainedValues(document, componentSymbol, component)
+        );
         allDiagnostics = allDiagnostics.concat(this.diagnoseInvalidOptionType(document, componentSymbol, component));
       }
     });
@@ -51,18 +55,20 @@ export class OptionsDiagnostics {
     component: IDocumentation
   ) {
     let allDiagnostics: vscode.Diagnostic[] = [];
-    const requiredOptions = _.filter(component.options, option => option.miscAttributes['required'] == 'true');
+    const requiredOptions = _.filter(component.options, option => option.miscAttributes.required == 'true');
     if (!_.isEmpty(requiredOptions)) {
       const completeScan = doCompleteScanOfSymbol(componentSymbol, document);
       const matchScanWithOption = this.matchScanToDocumentation(completeScan, requiredOptions);
       const missingRequiredOptions = matchScanWithOption.filter(
-        scannedOption => scannedOption.scan == null || _.isEmpty(this.attributeValueWithNoQuote(scannedOption.scan.attributeValue))
+        scannedOption =>
+          scannedOption.scan == null || _.isEmpty(this.attributeValueWithNoQuote(scannedOption.scan.attributeValue))
       );
       allDiagnostics = allDiagnostics.concat(
         missingRequiredOptions.map(missingRequiredOption => {
           return new vscode.Diagnostic(
             componentSymbol.location.range,
-            `The option ${missingRequiredOption.option.name} is required. Markup value is ${ReferenceDocumentation.camelCaseToHyphen(
+            `The option ${missingRequiredOption.option
+              .name} is required. Markup value is ${ReferenceDocumentation.camelCaseToHyphen(
               missingRequiredOption.option.name
             )}`,
             vscode.DiagnosticSeverity.Error
@@ -112,7 +118,8 @@ export class OptionsDiagnostics {
             valueNotPossibleInAttribute =>
               new vscode.Diagnostic(
                 optionThatIsPossiblyInError.scan.rangeInDocument,
-                `Value ${valueNotPossibleInAttribute} is not a valid value for the option ${optionThatIsPossiblyInError.option.name}`,
+                `Value ${valueNotPossibleInAttribute} is not a valid value for the option ${optionThatIsPossiblyInError
+                  .option.name}`,
                 vscode.DiagnosticSeverity.Error
               )
           )
@@ -162,7 +169,7 @@ export class OptionsDiagnostics {
 
   private diagnoseInvalidNumberType(scan: IScanOfAttributeValue, options: IDocumentation): vscode.Diagnostic {
     const attributeValue = this.attributeValueWithNoQuote(scan.attributeValue).toLowerCase();
-    if (attributeValue == '' || isNaN(new Number(attributeValue).valueOf())) {
+    if (attributeValue == '' || isNaN(Number(attributeValue).valueOf())) {
       return new vscode.Diagnostic(
         scan.rangeInDocument,
         `Option ${options.name} is of type : ${options.type}. Value should be a valid number.`
@@ -185,7 +192,7 @@ export class OptionsDiagnostics {
   private matchScanToDocumentation(completeScan: IScanOfAttributeValue[], options: IDocumentation[]) {
     return _.map(options, option => {
       return {
-        option: option,
+        option,
         scan: _.find(completeScan, scan => scan.attributeName == ReferenceDocumentation.camelCaseToHyphen(option.name))
       };
     });

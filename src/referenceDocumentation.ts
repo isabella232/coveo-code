@@ -6,7 +6,10 @@ export interface IDocumentation {
   comment: string;
   type?: string;
   constrainedValues?: string[];
-  miscAttributes?: { [key: string]: string };
+  miscAttributes: {
+    defaultValue?: string;
+    required?: string;
+  };
   options: IDocumentation[];
 }
 

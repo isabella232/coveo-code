@@ -2,10 +2,11 @@ import * as vscode from 'vscode';
 import { ReferenceDocumentation, IDocumentation } from './referenceDocumentation';
 import * as _ from 'lodash';
 import { getLanguageService, LanguageService, Scanner, TokenType } from 'vscode-html-languageservice';
+import { validMimeTypes } from './validResultTemplatesMimeTypes';
 
 const htmlLangService: LanguageService = getLanguageService();
 
-export function fromDocumentToComponent(
+export function getComponentAtPosition(
   referenceDocumentation: ReferenceDocumentation,
   position: vscode.Position,
   document: vscode.TextDocument
@@ -17,12 +18,12 @@ export function fromDocumentToComponent(
   return referenceDocumentation.getDocumentation(currentSymbol);
 }
 
-export function fromDocumentToComponentOption(
+export function getOptionAtPosition(
   referenceDocumentation: ReferenceDocumentation,
   position: vscode.Position,
   document: vscode.TextDocument
 ): IDocumentation {
-  const currentComponent = fromDocumentToComponent(referenceDocumentation, position, document);
+  const currentComponent = getComponentAtPosition(referenceDocumentation, position, document);
 
   if (currentComponent) {
     const currentActiveAttribute = getScanOfActiveAttributeValue(document, position);
@@ -44,8 +45,33 @@ export function getAllComponentsSymbol(
   const htmlDoc = htmlLangService.parseHTMLDocument(transformedDoc);
   // This needs to be done because there's an incompatibility between the htmllanguage service type and the latest d.ts for VS code API
   const symbols = <any>htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc);
+
   return _.filter(symbols, (symbol: vscode.SymbolInformation) => {
     return referenceDocumentation.getDocumentation(symbol) != null;
+  });
+}
+
+export function getAllPossibleResultTemplatesSymbols(document: vscode.TextDocument) {
+  const transformedDoc = transformTextDocumentApi(document);
+  const htmlDoc = htmlLangService.parseHTMLDocument(transformedDoc);
+  const symbols = <any>htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc);
+
+  return _.filter(symbols, (symbol: vscode.SymbolInformation) => {
+    let isResultTemplate = false;
+    if (/script/.test(symbol.name)) {
+      const scanOfScript = doCompleteScanOfSymbol(symbol, document);
+      const hasClass = _.find(scanOfScript, scan => scan.attributeName.toLowerCase() == 'class');
+      if (hasClass) {
+        const hasCorrectCssClass = /result-template/.test(hasClass.attributeValue);
+        isResultTemplate = isResultTemplate || hasCorrectCssClass;
+      }
+      const hasType = _.find(scanOfScript, scan => scan.attributeName.toLowerCase() == 'type');
+      if (hasType) {
+        const hasCorrectMimeTypes = _.find(validMimeTypes, possibleMime => new RegExp(possibleMime).test(hasType.attributeValue)) != null;
+        isResultTemplate = isResultTemplate || hasCorrectMimeTypes;
+      }
+    }
+    return isResultTemplate;
   });
 }
 

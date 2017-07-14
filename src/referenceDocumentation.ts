@@ -10,7 +10,9 @@ export interface IDocumentation {
   options: IDocumentation[];
 }
 
-const documentationJSON: { [component: string]: IDocumentation } = require('../data/documentation.json');
+const documentationJSON: {
+  [component: string]: IDocumentation;
+} = require('../data/documentation.json');
 
 export class ReferenceDocumentation {
   private static documentations: { [component: string]: IDocumentation };

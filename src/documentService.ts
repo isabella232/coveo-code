@@ -138,7 +138,7 @@ function _createRange(oldRangeObject: vscode.Range) {
   return new vscode.Range(oldRangeObject.start, oldRangeObject.end);
 }
 
-interface IScanOfAttributeValue {
+export interface IScanOfAttributeValue {
   attributeName: string;
   attributeValue: string;
   activeUnderCursor: boolean;

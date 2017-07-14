@@ -19,11 +19,13 @@ export function activate(context: vscode.ExtensionContext) {
 function provideDiagnosticsForMarkup(context: vscode.ExtensionContext) {
   const diagnosticsCollection = vscode.languages.createDiagnosticCollection('html');
   const diagnosticProvider = new DiagnosticProvider(diagnosticsCollection, refererenceDocumentation);
-  vscode.workspace.onDidChangeTextDocument((e: vscode.TextDocumentChangeEvent) => {
-    if (e.document === vscode.window.activeTextEditor.document) {
-      diagnosticProvider.updateDiagnostics(e.document);
+  const doUpdateDiagnostics = (documentOpened: vscode.TextDocument) => {
+    if (documentOpened === vscode.window.activeTextEditor.document) {
+      diagnosticProvider.updateDiagnostics(documentOpened);
     }
-  });
+  };
+  vscode.workspace.onDidChangeTextDocument((e: vscode.TextDocumentChangeEvent) => doUpdateDiagnostics(e.document));
+  diagnosticProvider.updateDiagnostics(vscode.window.activeTextEditor.document);
   context.subscriptions.push(diagnosticsCollection);
 }
 

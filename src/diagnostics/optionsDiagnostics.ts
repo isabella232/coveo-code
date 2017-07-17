@@ -60,8 +60,7 @@ export class OptionsDiagnostics {
       const completeScan = doCompleteScanOfSymbol(componentSymbol, document);
       const matchScanWithOption = this.matchScanToDocumentation(completeScan, requiredOptions);
       const missingRequiredOptions = matchScanWithOption.filter(
-        scannedOption =>
-          scannedOption.scan == null || _.isEmpty(this.attributeValueWithNoQuote(scannedOption.scan.attributeValue))
+        scannedOption => scannedOption.scan == null || _.isEmpty(scannedOption.scan.attributeValue)
       );
       allDiagnostics = allDiagnostics.concat(
         missingRequiredOptions.map(missingRequiredOption => {
@@ -107,9 +106,7 @@ export class OptionsDiagnostics {
           .value();
 
         if (optionThatIsPossiblyInError.scan) {
-          const valuesInAttributeNotPossible = _.chain(
-            this.attributeValueWithNoQuote(optionThatIsPossiblyInError.scan.attributeValue).split(',')
-          )
+          const valuesInAttributeNotPossible = _.chain(optionThatIsPossiblyInError.scan.attributeValue.split(','))
             .difference(allUniquePossibleValuesFromDocumentation)
             .without('')
             .value();
@@ -170,7 +167,7 @@ export class OptionsDiagnostics {
   }
 
   private diagnoseInvalidBooleanType(scan: IScanOfAttributeValue, options: IDocumentation): vscode.Diagnostic | null {
-    const attributeValue = this.attributeValueWithNoQuote(scan.attributeValue).toLowerCase();
+    const attributeValue = scan.attributeValue.toLowerCase();
     if (attributeValue != 'true' && attributeValue != 'false') {
       return new vscode.Diagnostic(
         scan.rangeInDocument,
@@ -181,7 +178,7 @@ export class OptionsDiagnostics {
   }
 
   private diagnoseInvalidNumberType(scan: IScanOfAttributeValue, options: IDocumentation): vscode.Diagnostic | null {
-    const attributeValue = this.attributeValueWithNoQuote(scan.attributeValue).toLowerCase();
+    const attributeValue = scan.attributeValue.toLowerCase();
     if (attributeValue == '' || isNaN(Number(attributeValue).valueOf())) {
       return new vscode.Diagnostic(
         scan.rangeInDocument,
@@ -192,7 +189,7 @@ export class OptionsDiagnostics {
   }
 
   private diagnoseInvalidFieldType(scan: IScanOfAttributeValue, options: IDocumentation): vscode.Diagnostic | null {
-    const attributeValue = this.attributeValueWithNoQuote(scan.attributeValue).toLowerCase();
+    const attributeValue = scan.attributeValue.toLowerCase();
     if (!/^@[a-zA-Z0-9_\.]+$/.test(attributeValue)) {
       return new vscode.Diagnostic(
         scan.rangeInDocument,
@@ -215,9 +212,5 @@ export class OptionsDiagnostics {
     return _.filter(this.matchScanToDocumentation(completeScan, options), matchedScan => {
       return matchedScan.scan != null;
     });
-  }
-
-  private attributeValueWithNoQuote(attributeValue: string): string {
-    return attributeValue.replace(/['"]/g, '');
   }
 }

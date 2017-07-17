@@ -3,20 +3,46 @@ import { ReferenceDocumentation, IDocumentation } from './referenceDocumentation
 import * as _ from 'lodash';
 import { getLanguageService, LanguageService, Scanner, TokenType } from 'vscode-html-languageservice';
 import { validMimeTypes } from './validResultTemplatesMimeTypes';
-
 const htmlLangService: LanguageService = getLanguageService();
+
+export interface IScanOfAttributeValue {
+  attributeName: string;
+  attributeValue: string;
+  activeUnderCursor: boolean;
+  rangeInDocument: vscode.Range;
+}
 
 export function getComponentAtPosition(
   referenceDocumentation: ReferenceDocumentation,
   position: vscode.Position,
   document: vscode.TextDocument
 ): IDocumentation | undefined {
-  const transformedDoc = transformTextDocumentApi(document);
+  const transformedDoc = _transformTextDocumentApi(document);
   const htmlDoc = htmlLangService.parseHTMLDocument(transformedDoc);
-  const symbols = htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc);
-  const currentSymbol = _getCurrentSymbol(<any>symbols, position);
+  const symbols = _transformSymbols(<any>htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc));
+  const currentSymbol = _getCurrentSymbol(symbols, position);
   if (currentSymbol) {
     return referenceDocumentation.getDocumentation(currentSymbol);
+  }
+  return undefined;
+}
+
+export function getResultTemplateAtPosition(
+  position: vscode.Position,
+  document: vscode.TextDocument
+): vscode.SymbolInformation | undefined {
+  const transformedDoc = _transformTextDocumentApi(document);
+  const htmlDoc = htmlLangService.parseHTMLDocument(transformedDoc);
+  const symbols = _transformSymbols(<any>htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc));
+  const currentSymbol = _getCurrentSymbol(symbols, position);
+  const allTemplates = getAllPossibleResultTemplatesSymbols(document);
+  if (currentSymbol) {
+    const currentTemplate = _.find(allTemplates, template =>
+      template.location.range.isEqual(currentSymbol.location.range)
+    );
+    if (currentTemplate) {
+      return currentTemplate;
+    }
   }
   return undefined;
 }
@@ -29,7 +55,7 @@ export function getOptionAtPosition(
   const currentComponent = getComponentAtPosition(referenceDocumentation, position, document);
 
   if (currentComponent) {
-    const currentActiveAttribute = getScanOfActiveAttributeValue(document, position);
+    const currentActiveAttribute = _getScanOfActiveAttributeValue(document, position);
     if (currentActiveAttribute) {
       const optionThatMatch = _.find(
         currentComponent.options,
@@ -41,14 +67,30 @@ export function getOptionAtPosition(
   return undefined;
 }
 
+export function getResultTemplateAttributeAtPosition(
+  position: vscode.Position,
+  document: vscode.TextDocument
+): IScanOfAttributeValue | undefined {
+  const currentTemplate = getResultTemplateAtPosition(position, document);
+  if (currentTemplate) {
+    const currentActiveAttribute = _getScanOfActiveAttributeValue(document, position);
+    if (currentActiveAttribute) {
+      const attributeNameLowerCase = currentActiveAttribute.attributeName.toLowerCase();
+      if (attributeNameLowerCase == 'class' || attributeNameLowerCase == 'type') {
+        return currentActiveAttribute;
+      }
+    }
+  }
+  return undefined;
+}
+
 export function getAllComponentsSymbol(
   referenceDocumentation: ReferenceDocumentation,
   document: vscode.TextDocument
 ): vscode.SymbolInformation[] {
-  const transformedDoc = transformTextDocumentApi(document);
+  const transformedDoc = _transformTextDocumentApi(document);
   const htmlDoc = htmlLangService.parseHTMLDocument(transformedDoc);
-  // This needs to be done because there's an incompatibility between the htmllanguage service type and the latest d.ts for VS code API
-  const symbols = <any>htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc);
+  const symbols = _transformSymbols(<any>htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc));
 
   return _.filter(symbols, (symbol: vscode.SymbolInformation) => {
     return referenceDocumentation.getDocumentation(symbol) != null;
@@ -56,10 +98,9 @@ export function getAllComponentsSymbol(
 }
 
 export function getAllPossibleResultTemplatesSymbols(document: vscode.TextDocument) {
-  const transformedDoc = transformTextDocumentApi(document);
+  const transformedDoc = _transformTextDocumentApi(document);
   const htmlDoc = htmlLangService.parseHTMLDocument(transformedDoc);
-  const symbols = <any>htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc);
-
+  const symbols = _transformSymbols(<any>htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc));
   return _.filter(symbols, (symbol: vscode.SymbolInformation) => {
     let isResultTemplate = false;
     if (/script/.test(symbol.name)) {
@@ -81,9 +122,9 @@ export function getAllPossibleResultTemplatesSymbols(document: vscode.TextDocume
 }
 
 export function getCurrentSymbol(position: vscode.Position, document: vscode.TextDocument) {
-  const transformedDoc = transformTextDocumentApi(document);
+  const transformedDoc = _transformTextDocumentApi(document);
   const htmlDoc = htmlLangService.parseHTMLDocument(transformedDoc);
-  const symbols = htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc);
+  const symbols = _transformSymbols(<any>htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc));
   return _getCurrentSymbol(<any>symbols, position);
 }
 
@@ -115,7 +156,7 @@ export function doCompleteScanOfSymbol(
       if (scanner.getTokenType() == TokenType.DelimiterAssign) {
         doScan = scanner.scan();
         if (scanner.getTokenType() == TokenType.AttributeValue) {
-          attributeValue = scanner.getTokenText();
+          attributeValue = scanner.getTokenText().replace(/['"]/g, '');
           if (
             scanner.getTokenOffset() + scanner.getTokenLength() >= cursorOffsetInSymbol &&
             scanner.getTokenOffset() <= cursorOffsetInSymbol
@@ -160,8 +201,8 @@ export function doCompleteScanOfCurrentSymbol(
   return undefined;
 }
 
-function transformTextDocumentApi(document: vscode.TextDocument) {
-  // this need to be done because there's an incompatibility between the htmllanguage service and the latest d.ts for VS code API.
+function _transformTextDocumentApi(document: vscode.TextDocument) {
+  // Necessary because the API is incompatible between htmlLanguage service and new vs code versions
   let transform: any = {};
   Object.assign(transform, document);
   transform.uri = document.uri.toString();
@@ -182,14 +223,21 @@ function _createRange(oldRangeObject: vscode.Range) {
   return new vscode.Range(oldRangeObject.start, oldRangeObject.end);
 }
 
-export interface IScanOfAttributeValue {
-  attributeName: string;
-  attributeValue: string;
-  activeUnderCursor: boolean;
-  rangeInDocument: vscode.Range;
+function _transformSymbols(symbols: vscode.SymbolInformation[]): vscode.SymbolInformation[] {
+  // Necessary because the API is incompatible between htmlLanguage service and new vs code versions
+  return symbols.map(symbol => _transformRange(symbol));
 }
 
-function getScanOfActiveAttributeValue(
+function _transformRange(symbol: vscode.SymbolInformation) {
+  // Necessary because the API is incompatible between htmlLanguage service and new vs code versions
+  symbol.location = new vscode.Location(
+    symbol.location.uri,
+    new vscode.Range(symbol.location.range.start, symbol.location.range.end)
+  );
+  return symbol;
+}
+
+function _getScanOfActiveAttributeValue(
   document: vscode.TextDocument,
   position: vscode.Position
 ): IScanOfAttributeValue | undefined {

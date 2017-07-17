@@ -10,19 +10,22 @@ export function getComponentAtPosition(
   referenceDocumentation: ReferenceDocumentation,
   position: vscode.Position,
   document: vscode.TextDocument
-): IDocumentation {
+): IDocumentation | undefined {
   const transformedDoc = transformTextDocumentApi(document);
   const htmlDoc = htmlLangService.parseHTMLDocument(transformedDoc);
   const symbols = htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc);
   const currentSymbol = _getCurrentSymbol(<any>symbols, position);
-  return referenceDocumentation.getDocumentation(currentSymbol);
+  if (currentSymbol) {
+    return referenceDocumentation.getDocumentation(currentSymbol);
+  }
+  return undefined;
 }
 
 export function getOptionAtPosition(
   referenceDocumentation: ReferenceDocumentation,
   position: vscode.Position,
   document: vscode.TextDocument
-): IDocumentation {
+): IDocumentation | undefined {
   const currentComponent = getComponentAtPosition(referenceDocumentation, position, document);
 
   if (currentComponent) {
@@ -35,6 +38,7 @@ export function getOptionAtPosition(
       return optionThatMatch;
     }
   }
+  return undefined;
 }
 
 export function getAllComponentsSymbol(
@@ -147,10 +151,13 @@ export function doCompleteScanOfSymbol(
 export function doCompleteScanOfCurrentSymbol(
   document: vscode.TextDocument,
   position: vscode.Position
-): IScanOfAttributeValue[] {
+): IScanOfAttributeValue[] | undefined {
   const currentSymbol = getCurrentSymbol(position, document);
   const currentCursorOffset = document.offsetAt(position);
-  return doCompleteScanOfSymbol(currentSymbol, document, currentCursorOffset);
+  if (currentSymbol) {
+    return doCompleteScanOfSymbol(currentSymbol, document, currentCursorOffset);
+  }
+  return undefined;
 }
 
 function transformTextDocumentApi(document: vscode.TextDocument) {
@@ -161,7 +168,10 @@ function transformTextDocumentApi(document: vscode.TextDocument) {
   return transform;
 }
 
-function _getCurrentSymbol(symbols: vscode.SymbolInformation[], position: vscode.Position): vscode.SymbolInformation {
+function _getCurrentSymbol(
+  symbols: vscode.SymbolInformation[],
+  position: vscode.Position
+): vscode.SymbolInformation | undefined {
   return _.findLast(symbols, (symbol: vscode.SymbolInformation) => {
     return new vscode.Range(symbol.location.range.start, symbol.location.range.end).contains(position);
   });
@@ -182,6 +192,6 @@ export interface IScanOfAttributeValue {
 function getScanOfActiveAttributeValue(
   document: vscode.TextDocument,
   position: vscode.Position
-): IScanOfAttributeValue {
+): IScanOfAttributeValue | undefined {
   return _.find(doCompleteScanOfCurrentSymbol(document, position), scan => scan.activeUnderCursor);
 }

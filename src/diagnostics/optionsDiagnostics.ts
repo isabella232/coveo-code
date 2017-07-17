@@ -106,24 +106,28 @@ export class OptionsDiagnostics {
           .uniq()
           .value();
 
-        const valuesInAttributeNotPossible = _.chain(
-          this.attributeValueWithNoQuote(optionThatIsPossiblyInError.scan.attributeValue).split(',')
-        )
-          .difference(allUniquePossibleValuesFromDocumentation)
-          .without('')
-          .value();
-
-        allDiagnostics = allDiagnostics.concat(
-          valuesInAttributeNotPossible.map(
-            valueNotPossibleInAttribute =>
-              new vscode.Diagnostic(
-                optionThatIsPossiblyInError.scan.rangeInDocument,
-                `Value ${valueNotPossibleInAttribute} is not a valid value for the option ${optionThatIsPossiblyInError
-                  .option.name}`,
-                vscode.DiagnosticSeverity.Error
-              )
+        if (optionThatIsPossiblyInError.scan) {
+          const valuesInAttributeNotPossible = _.chain(
+            this.attributeValueWithNoQuote(optionThatIsPossiblyInError.scan.attributeValue).split(',')
           )
-        );
+            .difference(allUniquePossibleValuesFromDocumentation)
+            .without('')
+            .value();
+
+          const range = optionThatIsPossiblyInError.scan.rangeInDocument;
+
+          allDiagnostics = allDiagnostics.concat(
+            valuesInAttributeNotPossible.map(
+              valueNotPossibleInAttribute =>
+                new vscode.Diagnostic(
+                  range,
+                  `Value ${valueNotPossibleInAttribute} is not a valid value for the option ${optionThatIsPossiblyInError
+                    .option.name}`,
+                  vscode.DiagnosticSeverity.Error
+                )
+            )
+          );
+        }
       });
     }
     return allDiagnostics;
@@ -138,25 +142,34 @@ export class OptionsDiagnostics {
     const completeScan = doCompleteScanOfSymbol(componentSymbol, document);
     const matchedScans = this.matchNonNullScanToDocumentation(completeScan, component.options);
     _.each(matchedScans, matchedScan => {
-      if (matchedScan.option.type) {
+      if (matchedScan.option.type && matchedScan.scan) {
         switch (matchedScan.option.type.toLowerCase()) {
           case 'boolean':
-            allDiagnostics.push(this.diagnoseInvalidBooleanType(matchedScan.scan, matchedScan.option));
+            const diagnosisOfBoolean = this.diagnoseInvalidBooleanType(matchedScan.scan, matchedScan.option);
+            if (diagnosisOfBoolean) {
+              allDiagnostics.push(diagnosisOfBoolean);
+            }
             break;
           case 'number':
-            allDiagnostics.push(this.diagnoseInvalidNumberType(matchedScan.scan, matchedScan.option));
+            const diagnosisOfNumber = this.diagnoseInvalidNumberType(matchedScan.scan, matchedScan.option);
+            if (diagnosisOfNumber) {
+              allDiagnostics.push(diagnosisOfNumber);
+            }
             break;
           case 'ifieldoption':
-            allDiagnostics.push(this.diagnoseInvalidFieldType(matchedScan.scan, matchedScan.option));
+            const diagnosisOfField = this.diagnoseInvalidFieldType(matchedScan.scan, matchedScan.option);
+            if (diagnosisOfField) {
+              allDiagnostics.push(diagnosisOfField);
+            }
           default:
             break;
         }
       }
     });
-    return _.compact(allDiagnostics);
+    return allDiagnostics;
   }
 
-  private diagnoseInvalidBooleanType(scan: IScanOfAttributeValue, options: IDocumentation): vscode.Diagnostic {
+  private diagnoseInvalidBooleanType(scan: IScanOfAttributeValue, options: IDocumentation): vscode.Diagnostic | null {
     const attributeValue = this.attributeValueWithNoQuote(scan.attributeValue).toLowerCase();
     if (attributeValue != 'true' && attributeValue != 'false') {
       return new vscode.Diagnostic(
@@ -167,7 +180,7 @@ export class OptionsDiagnostics {
     return null;
   }
 
-  private diagnoseInvalidNumberType(scan: IScanOfAttributeValue, options: IDocumentation): vscode.Diagnostic {
+  private diagnoseInvalidNumberType(scan: IScanOfAttributeValue, options: IDocumentation): vscode.Diagnostic | null {
     const attributeValue = this.attributeValueWithNoQuote(scan.attributeValue).toLowerCase();
     if (attributeValue == '' || isNaN(Number(attributeValue).valueOf())) {
       return new vscode.Diagnostic(
@@ -178,7 +191,7 @@ export class OptionsDiagnostics {
     return null;
   }
 
-  private diagnoseInvalidFieldType(scan: IScanOfAttributeValue, options: IDocumentation): vscode.Diagnostic {
+  private diagnoseInvalidFieldType(scan: IScanOfAttributeValue, options: IDocumentation): vscode.Diagnostic | null {
     const attributeValue = this.attributeValueWithNoQuote(scan.attributeValue).toLowerCase();
     if (!/^@[a-zA-Z0-9_\.]+$/.test(attributeValue)) {
       return new vscode.Diagnostic(

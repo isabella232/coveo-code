@@ -3,7 +3,7 @@ import { getAllPossibleResultTemplatesSymbols, doCompleteScanOfSymbol } from '..
 
 export class ResultTemplatesDiagnostics {
   public provideDiagnostics(document: vscode.TextDocument): vscode.Diagnostic[] {
-    let allDiagnostics: vscode.Diagnostic[] = [];
+    const allDiagnostics: vscode.Diagnostic[] = [];
 
     const allPossibleResultTemplates = getAllPossibleResultTemplatesSymbols(document);
 

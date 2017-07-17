@@ -64,37 +64,44 @@ export class ComponentOptionValues {
       return fakeValues;
     };
 
-    switch (this.componentOptionDocumentation.type.toLowerCase()) {
-      case 'boolean':
-        return {
-          completionToUse: CompletionItemForOptions,
-          valuesToUse: padDefaultValueWithFakeValues(['true', 'false'])
-        };
-      case 'string':
-        return {
-          completionToUse: CompletionItemForOptionsWithExamples,
-          valuesToUse: padDefaultValueWithFakeValues(['foo', 'bar'])
-        };
-      case 'ifieldoption':
-        return {
-          completionToUse: CompletionItemForOptionsWithExamples,
-          valuesToUse: padDefaultValueWithFakeValues(['@foo', '@bar'])
-        };
-      case 'number':
-        return {
-          completionToUse: CompletionItemForOptionsWithExamples,
-          valuesToUse: padDefaultValueWithFakeValues(['1', '2', '3'])
-        };
-      case 'array':
-        return {
-          completionToUse: CompletionItemForOptionsWithExamples,
-          valuesToUse: padDefaultValueWithFakeValues(['foo', 'foo,bar'])
-        };
-      default:
-        return {
-          completionToUse: CompletionItemForOptionsWithExamples,
-          valuesToUse: padDefaultValueWithFakeValues(['foo'])
-        };
+    if (this.componentOptionDocumentation.type) {
+      switch (this.componentOptionDocumentation.type.toLowerCase()) {
+        case 'boolean':
+          return {
+            completionToUse: CompletionItemForOptions,
+            valuesToUse: padDefaultValueWithFakeValues(['true', 'false'])
+          };
+        case 'string':
+          return {
+            completionToUse: CompletionItemForOptionsWithExamples,
+            valuesToUse: padDefaultValueWithFakeValues(['foo', 'bar'])
+          };
+        case 'ifieldoption':
+          return {
+            completionToUse: CompletionItemForOptionsWithExamples,
+            valuesToUse: padDefaultValueWithFakeValues(['@foo', '@bar'])
+          };
+        case 'number':
+          return {
+            completionToUse: CompletionItemForOptionsWithExamples,
+            valuesToUse: padDefaultValueWithFakeValues(['1', '2', '3'])
+          };
+        case 'array':
+          return {
+            completionToUse: CompletionItemForOptionsWithExamples,
+            valuesToUse: padDefaultValueWithFakeValues(['foo', 'foo,bar'])
+          };
+        default:
+          return {
+            completionToUse: CompletionItemForOptionsWithExamples,
+            valuesToUse: padDefaultValueWithFakeValues(['foo'])
+          };
+      }
     }
+
+    return {
+      completionToUse: CompletionItemForOptionsWithExamples,
+      valuesToUse: padDefaultValueWithFakeValues(['foo'])
+    };
   }
 }

@@ -14,38 +14,37 @@ export class CodeLensProvider implements vscode.CodeLensProvider {
       const allComponentsSymbols = getAllComponentsSymbol(this.referenceDocumentation, document);
       let resolves: vscode.CodeLens[] = [];
       const onlineDoc = _.map(allComponentsSymbols, (componentSymbol: vscode.SymbolInformation) => {
-        const componentInfo = this.referenceDocumentation.getDocumentation(componentSymbol);
-        return new vscode.CodeLens(componentSymbol.location.range, {
-          title: `Coveo online documentation...`,
-          command: 'vscode.open',
-          arguments: [
-            vscode.Uri.parse(
-              `https://coveo.github.io/search-ui/components/${this.referenceDocumentation
-                .getDocumentation(componentSymbol)
-                .name.toLowerCase()}.html`
-            )
-          ],
-          tooltip: `View online documentaion about the ${componentInfo.name} component`
-        });
+        const documentation = this.referenceDocumentation.getDocumentation(componentSymbol);
+        if (documentation) {
+          return new vscode.CodeLens(componentSymbol.location.range, {
+            title: `Coveo online documentation...`,
+            command: 'vscode.open',
+            arguments: [
+              vscode.Uri.parse(`https://coveo.github.io/search-ui/components/${documentation.name.toLowerCase()}.html`)
+            ],
+            tooltip: `View online documentaion about the ${documentation.name} component`
+          });
+        }
+
+        return undefined;
       });
 
       const previewHtml = _.map(allComponentsSymbols, (componentSymbol: vscode.SymbolInformation) => {
-        const componentInfo = this.referenceDocumentation.getDocumentation(componentSymbol);
-        return new vscode.CodeLens(componentSymbol.location.range, {
-          title: `Live preview`,
-          command: 'vscode.previewHtml',
-          arguments: [
-            vscode.Uri.parse(
-              `https://coveo.github.io/search-ui/components/${this.referenceDocumentation
-                .getDocumentation(componentSymbol)
-                .name.toLowerCase()}.html`
-            )
-          ],
-          tooltip: `View online documentaion about the ${componentInfo.name} component`
-        });
+        const documentation = this.referenceDocumentation.getDocumentation(componentSymbol);
+        if (documentation) {
+          return new vscode.CodeLens(componentSymbol.location.range, {
+            title: `Live preview`,
+            command: 'vscode.previewHtml',
+            arguments: [
+              vscode.Uri.parse(`https://coveo.github.io/search-ui/components/${documentation.name.toLowerCase()}.html`)
+            ],
+            tooltip: `View online documentaion about the ${documentation.name} component`
+          });
+        }
+        return undefined;
       });
 
-      resolves = resolves.concat(onlineDoc);
+      resolves = resolves.concat(_.compact(onlineDoc));
       resolve(resolves);
     });
   }

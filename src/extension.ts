@@ -20,12 +20,14 @@ function provideDiagnosticsForMarkup(context: vscode.ExtensionContext) {
   const diagnosticsCollection = vscode.languages.createDiagnosticCollection('html');
   const diagnosticProvider = new DiagnosticProvider(diagnosticsCollection, refererenceDocumentation);
   const doUpdateDiagnostics = (documentOpened: vscode.TextDocument) => {
-    if (documentOpened === vscode.window.activeTextEditor.document) {
+    if (vscode.window.activeTextEditor && documentOpened === vscode.window.activeTextEditor.document) {
       diagnosticProvider.updateDiagnostics(documentOpened);
     }
   };
   vscode.workspace.onDidChangeTextDocument((e: vscode.TextDocumentChangeEvent) => doUpdateDiagnostics(e.document));
-  diagnosticProvider.updateDiagnostics(vscode.window.activeTextEditor.document);
+  if (vscode.window.activeTextEditor) {
+    diagnosticProvider.updateDiagnostics(vscode.window.activeTextEditor.document);
+  }
   context.subscriptions.push(diagnosticsCollection);
 }
 
@@ -49,7 +51,7 @@ function providePreviewForComponents(context: vscode.ExtensionContext) {
   const previewUri = vscode.Uri.parse('coveo-preview://authority/coveo-preview');
   const previewProvider = new PreviewProvider(refererenceDocumentation);
   vscode.workspace.onDidChangeTextDocument((e: vscode.TextDocumentChangeEvent) => {
-    if (e.document === vscode.window.activeTextEditor.document) {
+    if (vscode.window.activeTextEditor && e.document === vscode.window.activeTextEditor.document) {
       previewProvider.update(previewUri);
     }
   });

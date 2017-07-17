@@ -31,12 +31,14 @@
     },
     "main": "./out/src/extension",
     "scripts": {
+        "build": "npm run prettier && npm run tslint && npm run docstore && npm run vscode:prepublish",
         "vscode:prepublish": "tsc -p ./",
         "compile": "tsc -watch -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
         "test": "node ./node_modules/vscode/bin/test",
         "prettier": "prettier --single-quote --print-width 120 --write 'src/**/*.ts'",
-        "tslint": "tslint -c tslint.json src/**/*.ts"
+        "tslint": "tslint -c tslint.json src/**/*.ts",
+        "docstore": "node buildDocumentationObject.js"
     },
     "devDependencies": {
         "@types/lodash": "^4.14.68",
@@ -44,12 +46,13 @@
         "@types/node": "^6.0.40",
         "mocha": "^2.3.3",
         "prettier": "^1.5.2",
-        "pretty-typescript": "^1.15.0",
+        "tslint": "^5.5.0",
         "typescript": "^2.0.3",
         "vscode": "^1.0.0",
         "write": "^1.0.3"
     },
     "dependencies": {
+        "@types/html-to-text": "^1.4.30",
         "coveo-search-ui": "^2.2900.14",
         "html-to-text": "^3.3.0",
         "lodash": "^4.17.4",

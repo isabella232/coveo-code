@@ -7,7 +7,10 @@
             "es2016"
         ],
         "sourceMap": true,
-        "rootDir": "./"
+        "rootDir": "./",
+        "noImplicitAny": true,
+        "noImplicitReturns": true,
+        "strictNullChecks": true
     },
     "exclude": [
         "node_modules",

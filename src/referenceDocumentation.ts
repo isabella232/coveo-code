@@ -31,7 +31,7 @@ export class ReferenceDocumentation {
     return `data-${optionName.replace(camelCaseToHyphenRegex, '-$1$2').toLowerCase()}`;
   }
 
-  public getDocumentation(symbol: vscode.SymbolInformation): IDocumentation {
+  public getDocumentation(symbol: vscode.SymbolInformation): IDocumentation | undefined {
     const allComponents = _.keys(ReferenceDocumentation.documentations);
     const componentFound = _.find(allComponents, (component: string) => {
       if (symbol.name) {
@@ -42,11 +42,11 @@ export class ReferenceDocumentation {
     if (componentFound) {
       return ReferenceDocumentation.documentations[componentFound];
     } else {
-      return null;
+      return undefined;
     }
   }
 
-  private getFromTree(name: string): IDocumentation {
+  private getFromTree(name: string): IDocumentation | undefined {
     if (ReferenceDocumentation.documentations[name] != null) {
       return ReferenceDocumentation.documentations[name];
     }
@@ -54,6 +54,6 @@ export class ReferenceDocumentation {
     if (ReferenceDocumentation.documentations[withoutCoveo] != null) {
       return ReferenceDocumentation.documentations[withoutCoveo];
     }
-    return null;
+    return undefined;
   }
 }

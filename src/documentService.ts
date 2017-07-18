@@ -201,6 +201,25 @@ export function doCompleteScanOfCurrentSymbol(
   return undefined;
 }
 
+export function getContentOfTemplate(template: vscode.SymbolInformation, document: vscode.TextDocument): string {
+  const scanner = htmlLangService.createScanner(document.getText(_createRange(template.location.range)));
+  let doScan: number = scanner.scan();
+  let content = '';
+  while (
+    doScan != TokenType.EOS &&
+    doScan != TokenType.EndTag &&
+    doScan != TokenType.EndTagClose &&
+    doScan != TokenType.Unknown
+  ) {
+    if (doScan == TokenType.Script) {
+      content += scanner.getTokenText();
+    }
+    doScan = scanner.scan();
+  }
+
+  return content;
+}
+
 function _transformTextDocumentApi(document: vscode.TextDocument) {
   // Necessary because the API is incompatible between htmlLanguage service and new vs code versions
   let transform: any = {};

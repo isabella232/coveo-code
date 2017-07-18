@@ -41,6 +41,7 @@
         "docstore": "node buildDocumentationObject.js"
     },
     "devDependencies": {
+        "@types/cheerio": "^0.22.2",
         "@types/lodash": "^4.14.68",
         "@types/mocha": "^2.2.32",
         "@types/node": "^6.0.40",
@@ -53,6 +54,7 @@
     },
     "dependencies": {
         "@types/html-to-text": "^1.4.30",
+        "cheerio": "^1.0.0-rc.2",
         "coveo-search-ui": "^2.2900.14",
         "html-to-text": "^3.3.0",
         "lodash": "^4.17.4",

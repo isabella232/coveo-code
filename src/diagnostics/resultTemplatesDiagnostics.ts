@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import * as _ from 'lodash';
 import { validMimeTypesHTML, validMimeTypesUnderscore, validMimeTypes } from '../validResultTemplatesMimeTypes';
-import { getAllPossibleResultTemplatesSymbols, doCompleteScanOfSymbol } from '../documentService';
+import { getAllPossibleResultTemplatesSymbols, doCompleteScanOfSymbol, getContentOfTemplate } from '../documentService';
+import * as cheerio from 'cheerio';
 
 export class ResultTemplatesDiagnostics {
   public provideDiagnostics(document: vscode.TextDocument): vscode.Diagnostic[] {
@@ -12,27 +13,8 @@ export class ResultTemplatesDiagnostics {
       allDiagnostics = allDiagnostics.concat(this.diagnoseMissingClass(template, document));
       allDiagnostics = allDiagnostics.concat(this.diagnoseMissingType(template, document));
       allDiagnostics = allDiagnostics.concat(this.diagnoseDuplicateConditions(template, document));
+      allDiagnostics = allDiagnostics.concat(this.diagnoseContentOfTemplate(template, document));
     });
-
-    const resultTemplateInsideResultList = _.filter(
-      allPossibleResultTemplates,
-      template => (template.containerName ? /CoveoResultList/.test(template.containerName) : false)
-    );
-    const nonDefaultResultTemplates = _.slice(
-      resultTemplateInsideResultList,
-      0,
-      resultTemplateInsideResultList.length - 1
-    );
-    const defaultResultTemplate = _.last(resultTemplateInsideResultList);
-
-    _.each(nonDefaultResultTemplates, nonDefaultResultTemplate => {
-      allDiagnostics = allDiagnostics.concat(this.diagnoseMissingCondition(nonDefaultResultTemplate, document));
-    });
-
-    if (defaultResultTemplate) {
-      allDiagnostics = allDiagnostics.concat(this.diagnoseNonRequiredCondition(defaultResultTemplate, document));
-    }
-
     return allDiagnostics;
   }
 
@@ -98,6 +80,36 @@ export class ResultTemplatesDiagnostics {
     return ret;
   }
 
+  private diagnoseConditions(
+    allPossibleResultTemplates: vscode.SymbolInformation[],
+    document: vscode.TextDocument
+  ): vscode.Diagnostic[] {
+    let allDiagnostics: vscode.Diagnostic[] = [];
+
+    const resultTemplateInsideResultList = _.filter(
+      allPossibleResultTemplates,
+      template => (template.containerName ? /CoveoResultList/.test(template.containerName) : false)
+    );
+
+    const nonDefaultResultTemplates = _.slice(
+      resultTemplateInsideResultList,
+      0,
+      resultTemplateInsideResultList.length - 1
+    );
+
+    const defaultResultTemplate = _.last(resultTemplateInsideResultList);
+
+    _.each(nonDefaultResultTemplates, nonDefaultResultTemplate => {
+      allDiagnostics = allDiagnostics.concat(this.diagnoseMissingCondition(nonDefaultResultTemplate, document));
+    });
+
+    if (defaultResultTemplate) {
+      allDiagnostics = allDiagnostics.concat(this.diagnoseNonRequiredCondition(defaultResultTemplate, document));
+    }
+
+    return allDiagnostics;
+  }
+
   private diagnoseMissingCondition(
     symbol: vscode.SymbolInformation,
     document: vscode.TextDocument
@@ -153,6 +165,36 @@ export class ResultTemplatesDiagnostics {
       );
     }
 
+    return ret;
+  }
+
+  private diagnoseContentOfTemplate(
+    symbol: vscode.SymbolInformation,
+    document: vscode.TextDocument
+  ): vscode.Diagnostic[] {
+    const ret: vscode.Diagnostic[] = [];
+    const content = getContentOfTemplate(symbol, document);
+    if (content.trim() == '') {
+      ret.push(
+        new vscode.Diagnostic(symbol.location.range, 'Templates should not be empty', vscode.DiagnosticSeverity.Error)
+      );
+    } else {
+      const addInvalidRoot = () =>
+        ret.push(
+          new vscode.Diagnostic(
+            symbol.location.range,
+            'Templates should have a single "root" element. This means a single "div" element inside which your whole template should be contained',
+            vscode.DiagnosticSeverity.Error
+          )
+        );
+      const $ = cheerio.load(content);
+      const root = $.root();
+      const body = root.find('body');
+      const allChildren = _.filter(body[0].children, child => child.tagName != null);
+      if (allChildren.length == 0 || allChildren.length > 1) {
+        addInvalidRoot();
+      }
+    }
     return ret;
   }
 }

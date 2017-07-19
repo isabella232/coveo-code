@@ -16,18 +16,33 @@
     "contributes": {
         "commands": [
             {
-                "command": "extension.showCoveoPreview",
-                "title": "Show Preview of Coveo Components"
+                "command": "coveo.showDocumentation",
+                "title": "Documentation for Coveo Components"
+            }
+        ],
+        "keybindings": [
+            {
+                "command": "coveo.showDocumentation",
+                "key": "ctrl+f1",
+                "mac": "cmd+f1",
+                "when": "editorLangId == html && editorTextFocus"
             }
         ],
         "menus": {
-            "editor/title": [
+            "editor/context": [
                 {
-                    "command": "extension.showCoveoPreview",
-                    "when": "resourceLangId == html"
+                    "command": "coveo.showDocumentation",
+                    "when": "editorLangId == html && editorTextFocus",
+                    "group": "navigation"
                 }
             ]
-        }
+        },
+        "snippets": [
+            {
+                "language": "html",
+                "path" : "./snippets/coveo.json"
+            }
+        ]
     },
     "main": "./out/src/extension",
     "scripts": {

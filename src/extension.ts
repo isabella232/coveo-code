@@ -2,18 +2,30 @@
 
 import * as vscode from 'vscode';
 import { ReferenceDocumentation } from './referenceDocumentation';
-import { CodeLensProvider } from './provider/codeLensProvider';
 import { HTMLCompletionItemProvider } from './provider/htmlCompletionItemProvider';
 import { PreviewProvider } from './provider/previewProvider';
 import { DiagnosticProvider } from './provider/diagnosticProvider';
+import { OnlineDocumentationProvider } from './provider/onlineDocumentationProvider';
 
 const refererenceDocumentation = new ReferenceDocumentation();
 
 export function activate(context: vscode.ExtensionContext) {
   provideCompletionForMarkup(context);
-  provideCodeLensForMarkup(context);
-  providePreviewForComponents(context);
+  //providePreviewForComponents(context);
   provideDiagnosticsForMarkup(context);
+  provideContextMenu(context);
+}
+
+function provideContextMenu(context: vscode.ExtensionContext) {
+  const contextMenuProvider = new OnlineDocumentationProvider(refererenceDocumentation);
+  const commandProvider = vscode.commands.registerCommand('coveo.showDocumentation', () => {
+    if (vscode.window.activeTextEditor) {
+      const currentDocument = vscode.window.activeTextEditor.document;
+      const currentPosition = vscode.window.activeTextEditor.selection.active;
+      contextMenuProvider.openDocumentation(currentPosition, currentDocument);
+    }
+  });
+  context.subscriptions.push(commandProvider);
 }
 
 function provideDiagnosticsForMarkup(context: vscode.ExtensionContext) {
@@ -39,15 +51,7 @@ function provideCompletionForMarkup(context: vscode.ExtensionContext) {
   context.subscriptions.push(htmlCompletionProvider);
 }
 
-function provideCodeLensForMarkup(context: vscode.ExtensionContext) {
-  const codeLensProvider = vscode.languages.registerCodeLensProvider(
-    'html',
-    new CodeLensProvider(refererenceDocumentation)
-  );
-  context.subscriptions.push(codeLensProvider);
-}
-
-function providePreviewForComponents(context: vscode.ExtensionContext) {
+/*function providePreviewForComponents(context: vscode.ExtensionContext) {
   const previewUri = vscode.Uri.parse('coveo-preview://authority/coveo-preview');
   const previewProvider = new PreviewProvider(refererenceDocumentation);
   vscode.workspace.onDidChangeTextDocument((e: vscode.TextDocumentChangeEvent) => {
@@ -70,4 +74,4 @@ function providePreviewForComponents(context: vscode.ExtensionContext) {
       );
   });
   context.subscriptions.push(commandProvider, previewRegistration);
-}
+}*/

@@ -179,7 +179,11 @@ export class ResultTemplatesDiagnostics {
         new vscode.Diagnostic(symbol.location.range, 'Templates should not be empty', vscode.DiagnosticSeverity.Error)
       );
     } else {
-      const addInvalidRoot = () =>
+      const $ = cheerio.load(content);
+      const root = $.root();
+      const body = root.find('body');
+      const allChildren = _.filter(body[0].children, child => child.tagName != null);
+      if (allChildren.length == 0 || allChildren.length > 1) {
         ret.push(
           new vscode.Diagnostic(
             symbol.location.range,
@@ -187,12 +191,6 @@ export class ResultTemplatesDiagnostics {
             vscode.DiagnosticSeverity.Error
           )
         );
-      const $ = cheerio.load(content);
-      const root = $.root();
-      const body = root.find('body');
-      const allChildren = _.filter(body[0].children, child => child.tagName != null);
-      if (allChildren.length == 0 || allChildren.length > 1) {
-        addInvalidRoot();
       }
     }
     return ret;

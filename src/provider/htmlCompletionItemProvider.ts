@@ -23,7 +23,6 @@ export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider
   ): Thenable<vscode.CompletionItem[]> {
     return new Promise<vscode.CompletionItem[]>((resolve, reject) => {
       let completionItems: vscode.CompletionItem[] = [];
-
       const currentOption = getOptionAtPosition(this.referenceDocumentation, position, document);
       const currentOptionInResultTemplate = getResultTemplateAttributeAtPosition(position, document);
       const currentComponent = getComponentAtPosition(this.referenceDocumentation, position, document);

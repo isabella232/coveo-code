@@ -6,14 +6,26 @@ import { HTMLCompletionItemProvider } from './provider/htmlCompletionItemProvide
 import { PreviewProvider } from './provider/previewProvider';
 import { DiagnosticProvider } from './provider/diagnosticProvider';
 import { OnlineDocumentationProvider } from './provider/onlineDocumentationProvider';
+import { Config } from './config/config';
+import { SalesforceConnection } from './salesforce/salesforceConnection';
+import { SalesforceAPI } from './salesforce/salesforceAPI';
 
 const refererenceDocumentation = new ReferenceDocumentation();
+const salesforceAPI = new SalesforceAPI();
 
 export function activate(context: vscode.ExtensionContext) {
-  provideCompletionForMarkup(context);
+  provideCompletionForMarkup(context, 'html');
+  provideCompletionForMarkup(context, 'visualforce');
   //providePreviewForComponents(context);
   provideDiagnosticsForMarkup(context);
   provideContextMenu(context);
+  provideCommandToConnectToSalesforce();
+}
+
+function provideCommandToConnectToSalesforce() {
+  const commandProvider = vscode.commands.registerCommand('coveo.connectToSalesforce', () => {
+    salesforceAPI.retrieveApexComponent();
+  });
 }
 
 function provideContextMenu(context: vscode.ExtensionContext) {
@@ -32,6 +44,7 @@ function provideDiagnosticsForMarkup(context: vscode.ExtensionContext) {
   const diagnosticsCollection = vscode.languages.createDiagnosticCollection('html');
   const diagnosticProvider = new DiagnosticProvider(diagnosticsCollection, refererenceDocumentation);
   const doUpdateDiagnostics = (documentOpened: vscode.TextDocument) => {
+    console.log(documentOpened.languageId);
     if (vscode.window.activeTextEditor && documentOpened === vscode.window.activeTextEditor.document) {
       diagnosticProvider.updateDiagnostics(documentOpened);
     }
@@ -43,9 +56,9 @@ function provideDiagnosticsForMarkup(context: vscode.ExtensionContext) {
   context.subscriptions.push(diagnosticsCollection);
 }
 
-function provideCompletionForMarkup(context: vscode.ExtensionContext) {
+function provideCompletionForMarkup(context: vscode.ExtensionContext, langId: string) {
   const htmlCompletionProvider = vscode.languages.registerCompletionItemProvider(
-    'html',
+    langId,
     new HTMLCompletionItemProvider(refererenceDocumentation)
   );
   context.subscriptions.push(htmlCompletionProvider);

@@ -11,13 +11,30 @@
         "Other"
     ],
     "activationEvents": [
-        "onLanguage:html"
+        "onLanguage:html",
+        "onLanguage:visualforce"
     ],
     "contributes": {
+        "languages": [
+            {
+                "id": "visualforce",
+                "aliases": [
+                    "vsforce",
+                    "visualforce"
+                ],
+                "extensions": [
+                    ".cmp"
+                ]
+            }
+        ],
         "commands": [
             {
                 "command": "coveo.showDocumentation",
                 "title": "Documentation for Coveo Components"
+            },
+            {
+                "command": "coveo.connectToSalesforce",
+                "title": "Connect to your salesforce organization"
             }
         ],
         "keybindings": [
@@ -40,7 +57,7 @@
         "snippets": [
             {
                 "language": "html",
-                "path" : "./snippets/coveo.json"
+                "path": "./snippets/coveo.json"
             }
         ]
     },
@@ -69,9 +86,11 @@
     },
     "dependencies": {
         "@types/html-to-text": "^1.4.30",
+        "@types/jsforce": "^1.8.2",
         "cheerio": "^1.0.0-rc.2",
         "coveo-search-ui": "^2.2900.14",
         "html-to-text": "^3.3.0",
+        "jsforce": "^1.8.0",
         "lodash": "^4.17.4",
         "remove-markdown": "^0.1.0",
         "upndown": "^2.1.0",

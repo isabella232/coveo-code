@@ -3,28 +3,83 @@
 import * as vscode from 'vscode';
 import { ReferenceDocumentation } from './referenceDocumentation';
 import { HTMLCompletionItemProvider } from './provider/htmlCompletionItemProvider';
-import { PreviewProvider } from './provider/previewProvider';
 import { DiagnosticProvider } from './provider/diagnosticProvider';
 import { OnlineDocumentationProvider } from './provider/onlineDocumentationProvider';
-import { Config } from './config/config';
 import { SalesforceConnection } from './salesforce/salesforceConnection';
-import { SalesforceAPI } from './salesforce/salesforceAPI';
+import { SalesforceAPI, DiffResult } from './salesforce/salesforceAPI';
+import { VisualforceFormattingProvider } from './provider/visualforceFormattingProvider';
+import {
+  SalesforceResourceContentProvider,
+  SalesforceResourceLocation
+} from './salesforce/salesforceResourceContentProvider';
 
 const refererenceDocumentation = new ReferenceDocumentation();
 const salesforceAPI = new SalesforceAPI();
 
 export function activate(context: vscode.ExtensionContext) {
+  // Generic
   provideCompletionForMarkup(context, 'html');
-  provideCompletionForMarkup(context, 'visualforce');
-  //providePreviewForComponents(context);
-  provideDiagnosticsForMarkup(context);
+  provideDiagnosticsForMarkup(context, 'html');
   provideContextMenu(context);
-  provideCommandToConnectToSalesforce();
+
+  // Salesforce specific
+  provideFormattingForVisualforce(context);
+  provideDiffForSalesforceResources(context);
+  provideCommandToRetrieveComponentFromSalesforce();
+  provideCommandToTakeRemoteFileFromSalesforce();
+  provideCommandToTakeLocalFileForSalesforce();
+  provideCompletionForMarkup(context, 'visualforce');
+  provideDiagnosticsForMarkup(context, 'visualforce');
 }
 
-function provideCommandToConnectToSalesforce() {
-  const commandProvider = vscode.commands.registerCommand('coveo.connectToSalesforce', () => {
-    salesforceAPI.retrieveApexComponent();
+function provideDiffForSalesforceResources(context: vscode.ExtensionContext) {
+  const salesforceResourceContentProvider = new SalesforceResourceContentProvider();
+  const providerRegistration = vscode.workspace.registerTextDocumentContentProvider(
+    SalesforceResourceContentProvider.scheme,
+    salesforceResourceContentProvider
+  );
+  context.subscriptions.push(providerRegistration);
+}
+
+function provideFormattingForVisualforce(context: vscode.ExtensionContext) {
+  context.subscriptions.push(
+    vscode.languages.registerDocumentFormattingEditProvider('visualforce', new VisualforceFormattingProvider())
+  );
+}
+
+function provideCommandToRetrieveComponentFromSalesforce() {
+  const commandProvider = vscode.commands.registerCommand('coveo.salesforce.retrieveSearchPageComponent', () => {
+    salesforceAPI.retrieveApexComponent().then(recordRetrieved => {
+      if (recordRetrieved) {
+        salesforceAPI.diffComponentWithLocalVersion(recordRetrieved.Name).then(outcome => {
+          if (outcome == DiffResult.FILE_DOES_NOT_EXIST_LOCALLY) {
+            salesforceAPI.saveFile(
+              SalesforceResourceContentProvider.getUri(recordRetrieved.Name, SalesforceResourceLocation.DIST),
+              SalesforceResourceLocation.DIST
+            );
+          }
+        });
+      }
+    });
+  });
+}
+
+function provideCommandToTakeRemoteFileFromSalesforce() {
+  vscode.commands.registerCommand('coveo.takeRemote', (uri: vscode.Uri) => {
+    if (uri.scheme == SalesforceResourceContentProvider.scheme) {
+      salesforceAPI.saveFile(uri, SalesforceResourceLocation.DIST).then(success => {
+        if (success) {
+          vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+        }
+      });
+    }
+  });
+}
+
+function provideCommandToTakeLocalFileForSalesforce() {
+  vscode.commands.registerCommand('coveo.takeLocal', (uri: vscode.Uri) => {
+    // Nothing to do as far as saving file goes : simply close the editor.
+    vscode.commands.executeCommand('workbench.action.closeActiveEditor');
   });
 }
 
@@ -40,11 +95,10 @@ function provideContextMenu(context: vscode.ExtensionContext) {
   context.subscriptions.push(commandProvider);
 }
 
-function provideDiagnosticsForMarkup(context: vscode.ExtensionContext) {
-  const diagnosticsCollection = vscode.languages.createDiagnosticCollection('html');
+function provideDiagnosticsForMarkup(context: vscode.ExtensionContext, langId: string) {
+  const diagnosticsCollection = vscode.languages.createDiagnosticCollection(langId);
   const diagnosticProvider = new DiagnosticProvider(diagnosticsCollection, refererenceDocumentation);
   const doUpdateDiagnostics = (documentOpened: vscode.TextDocument) => {
-    console.log(documentOpened.languageId);
     if (vscode.window.activeTextEditor && documentOpened === vscode.window.activeTextEditor.document) {
       diagnosticProvider.updateDiagnostics(documentOpened);
     }
@@ -63,28 +117,3 @@ function provideCompletionForMarkup(context: vscode.ExtensionContext, langId: st
   );
   context.subscriptions.push(htmlCompletionProvider);
 }
-
-/*function providePreviewForComponents(context: vscode.ExtensionContext) {
-  const previewUri = vscode.Uri.parse('coveo-preview://authority/coveo-preview');
-  const previewProvider = new PreviewProvider(refererenceDocumentation);
-  vscode.workspace.onDidChangeTextDocument((e: vscode.TextDocumentChangeEvent) => {
-    if (vscode.window.activeTextEditor && e.document === vscode.window.activeTextEditor.document) {
-      previewProvider.update(previewUri);
-    }
-  });
-
-  const previewRegistration = vscode.workspace.registerTextDocumentContentProvider('coveo-preview', previewProvider);
-  const commandProvider = vscode.commands.registerCommand('extension.showCoveoPreview', () => {
-    return vscode.commands
-      .executeCommand('vscode.showCoveoPreview', previewUri, vscode.ViewColumn.Two, 'Coveo Preview')
-      .then(
-        success => {
-          console.log('success');
-        },
-        reason => {
-          vscode.window.showErrorMessage(reason);
-        }
-      );
-  });
-  context.subscriptions.push(commandProvider, previewRegistration);
-}*/

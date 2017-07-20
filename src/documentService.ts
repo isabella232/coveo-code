@@ -12,6 +12,12 @@ export interface IScanOfAttributeValue {
   rangeInDocument: vscode.Range;
 }
 
+export function formatDocument(document: vscode.TextDocument, options: vscode.FormattingOptions) {
+  const transformedDoc = _transformTextDocumentApi(document);
+  const range = new vscode.Range(document.positionAt(0), document.positionAt(document.getText().length));
+  return htmlLangService.format(transformedDoc, range, options);
+}
+
 export function getComponentAtPosition(
   referenceDocumentation: ReferenceDocumentation,
   position: vscode.Position,

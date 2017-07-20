@@ -15,16 +15,25 @@
         "onLanguage:visualforce"
     ],
     "contributes": {
+        "grammars": [
+            {
+                "language": "visualforce",
+                "scopeName": "text.html.basic",
+                "path": "./syntaxes/visualforce.tmLanguage"
+            }
+        ],
         "languages": [
             {
                 "id": "visualforce",
                 "aliases": [
-                    "vsforce",
+                    "Visualforce",
                     "visualforce"
                 ],
                 "extensions": [
-                    ".cmp"
-                ]
+                    ".cmp",
+                    ".component"
+                ],
+                "configuration": "./visualforce.configuration.json"
             }
         ],
         "commands": [
@@ -33,8 +42,32 @@
                 "title": "Documentation for Coveo Components"
             },
             {
-                "command": "coveo.connectToSalesforce",
-                "title": "Connect to your salesforce organization"
+                "command": "coveo.salesforce.retrieveSearchPageComponent",
+                "title": "Retrieve a Coveo Search Visualforce component from your Salesforce organization"
+            },
+            {
+                "command": "coveo.takeLocal",
+                "title": "Take local version",
+                "icon": {
+                    "light": "./media/floppy-light.svg",
+                    "dark": "./media/floppy-dark.svg"
+                }
+            },
+            {
+                "command": "coveo.upload",
+                "title": "Upload file",
+                "icon": {
+                    "dark": "",
+                    "light": ""
+                }
+            },
+            {
+                "command": "coveo.takeRemote",
+                "title": "Take remote version",
+                "icon": {
+                    "light": "./media/cloud-download-light.svg",
+                    "dark": "./media/cloud-download-dark.svg"
+                }
             }
         ],
         "keybindings": [
@@ -43,6 +76,12 @@
                 "key": "ctrl+f1",
                 "mac": "cmd+f1",
                 "when": "editorLangId == html && editorTextFocus"
+            },
+            {
+                "command": "coveo.showDocumentation",
+                "key": "ctrl+f1",
+                "mac": "cmd+f1",
+                "when": "editorLangId == visualforce && editorTextFocus"
             }
         ],
         "menus": {
@@ -51,13 +90,44 @@
                     "command": "coveo.showDocumentation",
                     "when": "editorLangId == html && editorTextFocus",
                     "group": "navigation"
+                },
+                {
+                    "command": "coveo.showDocumentation",
+                    "when": "editorLangId == visualforce && editorTextFocus",
+                    "group": "navigation"
+                },
+                {
+                    "command": "coveo.takeLocal",
+                    "when": "editorLangId == visualforce && textCompareEditorVisible",
+                    "group": "navigation"
+                },
+                {
+                    "command": "coveo.takeRemote",
+                    "when": "editorLangId == visualforce && textCompareEditorVisible",
+                    "group": "navigation"
+                }
+            ],
+            "editor/title": [
+                {
+                    "command": "coveo.takeLocal",
+                    "when": "editorLangId == visualforce && textCompareEditorVisible",
+                    "group": "navigation"
+                },
+                {
+                    "command": "coveo.takeRemote",
+                    "when": "editorLangId == visualforce && textCompareEditorVisible",
+                    "group": "navigation"
                 }
             ]
         },
         "snippets": [
             {
                 "language": "html",
-                "path": "./snippets/coveo.json"
+                "path": "./snippets/coveo.html.json"
+            },
+            {
+                "language": "visualforce",
+                "path": "./snippets/coveo.visualforce.json"
             }
         ]
     },

@@ -8,6 +8,7 @@ import * as write from 'write';
 import { DiffContentStore } from '../diffContentStore';
 import path = require('path');
 import fs = require('fs');
+import * as jsforceextension from '../definitions/jsforce';
 
 interface ISalesforceApexComponentRecord {
   Name: string;
@@ -17,6 +18,7 @@ interface ISalesforceApexComponentRecord {
 export enum DiffResult {
   FILE_DOES_NOT_EXIST_LOCALLY,
   EDITOR_DIFF_OPENED,
+  NOTHING_TO_DIFF,
   EDITOR_NOT_ABLE_TO_DIFF,
   EDITOR_ERROR_WHILE_EXECUTING_DIFF
 }
@@ -49,83 +51,82 @@ export class SalesforceAPI {
     editBuilder.setEndOfLine(vscode.EndOfLine.LF);
   }
 
-  public saveFile(uri: vscode.Uri, location: SalesforceResourceLocation, showDiff = false): Promise<boolean> {
-    const key = SalesforceResourceContentProvider.getKeyFromUri(uri);
-    if (key) {
-      const diffStoreKey = SalesforceResourceContentProvider.getDiffStoreScheme(key, location);
-      const contentOfFile = DiffContentStore.get(diffStoreKey);
-      const activeRoothPath = vscode.workspace.rootPath;
-      if (activeRoothPath) {
-        const filePathOnSystem = path.join(activeRoothPath, this.config.getOutputFolder(), `${key}.cmp`);
-        return write(filePathOnSystem, contentOfFile)
-          .then(() => {
-            DiffContentStore.add(
-              SalesforceResourceContentProvider.getDiffStoreScheme(key, SalesforceResourceLocation.LOCAL),
-              contentOfFile
-            );
-            if (showDiff) {
-              return this.diffComponentWithLocalVersion(key, true).then(() => {
-                return true;
-              });
-            }
-            return true;
-          })
-          .catch(() => false);
+  public saveFile(componentName: string, content: string): Promise<boolean> {
+    const activeRoothPath = vscode.workspace.rootPath;
+    if (activeRoothPath) {
+      const filePathOnSystem = path.join(activeRoothPath, this.config.getOutputFolder(), `${componentName}.cmp`);
+      return write(filePathOnSystem, content).then(() => {
+        this.saveComponentInDiffStore(componentName, SalesforceResourceLocation.LOCAL, content);
+        return true;
+      });
+    }
+    return Promise.reject(`No active root path for current workspace`);
+  }
+
+  public getPathOfFileLocally(componentName: string) {
+    if (vscode.workspace.rootPath) {
+      return path.join(vscode.workspace.rootPath, this.config.getOutputFolder(), `${componentName}.cmp`);
+    } else {
+      return undefined;
+    }
+  }
+
+  public getContentOfFileLocally(componentName: string): string | undefined {
+    const localPathOfComponent = this.getPathOfFileLocally(componentName);
+    if (localPathOfComponent) {
+      if (fs.existsSync(localPathOfComponent)) {
+        const contentOfLocalFile = fs.readFileSync(localPathOfComponent).toString();
+        this.saveComponentInDiffStore(componentName, SalesforceResourceLocation.LOCAL, contentOfLocalFile);
+        return contentOfLocalFile;
       }
     }
-    return Promise.resolve(false);
+    return undefined;
   }
 
-  public diffComponentWithLocalVersion(componentName: string, showIdentical = false): Promise<DiffResult> {
-    if (vscode.workspace.rootPath) {
-      const localPathOfComponent = path.join(
-        vscode.workspace.rootPath,
-        this.config.getOutputFolder(),
-        `${componentName}.cmp`
-      );
+  /*public getContentOfFileRemote(componentName: string): Promise<string | undefined> {
+    //return this.downloadApexComponent
+  }*/
 
-      return new Promise((resolve, reject) => {
-        if (fs.existsSync(localPathOfComponent)) {
-          const contentOfLocalFile = fs.readFileSync(localPathOfComponent).toString();
-          const contentOfDistFile = DiffContentStore.get(
-            SalesforceResourceContentProvider.getDiffStoreScheme(componentName, SalesforceResourceLocation.DIST)
-          );
-          if (contentOfLocalFile && contentOfDistFile) {
-            DiffContentStore.add(
-              SalesforceResourceContentProvider.getDiffStoreScheme(componentName, SalesforceResourceLocation.LOCAL),
-              contentOfLocalFile
-            );
-            if (contentOfDistFile != contentOfLocalFile || showIdentical) {
-              vscode.commands
-                .executeCommand(
-                  'vscode.diff',
-                  SalesforceResourceContentProvider.getUri(componentName, SalesforceResourceLocation.LOCAL),
-                  SalesforceResourceContentProvider.getUri(componentName, SalesforceResourceLocation.DIST),
-                  'Comparing: Local \u2194 Remote (Salesforce)'
-                )
-                .then(
-                  success => {
-                    resolve(DiffResult.EDITOR_DIFF_OPENED);
-                  },
-                  err => {
-                    reject(DiffResult.EDITOR_ERROR_WHILE_EXECUTING_DIFF);
-                  }
-                );
-            }
+  public diffComponentWithLocalVersion(componentName: string): Promise<DiffResult> {
+    return new Promise((resolve, reject) => {
+      const contentOfLocalFile = this.getContentOfFileLocally(componentName);
+      const contentOfDistFile = DiffContentStore.get(
+        SalesforceResourceContentProvider.getDiffStoreScheme(componentName, SalesforceResourceLocation.DIST)
+      );
+      if (contentOfLocalFile) {
+        if (contentOfDistFile) {
+          if (contentOfDistFile != contentOfLocalFile) {
+            vscode.commands
+              .executeCommand(
+                'vscode.diff',
+                SalesforceResourceContentProvider.getUri(componentName, SalesforceResourceLocation.LOCAL),
+                SalesforceResourceContentProvider.getUri(componentName, SalesforceResourceLocation.DIST),
+                'Comparing: Local \u2194 Remote (Salesforce)'
+              )
+              .then(
+                success => {
+                  resolve(DiffResult.EDITOR_DIFF_OPENED);
+                },
+                err => {
+                  reject(err);
+                }
+              );
+          } else {
+            resolve(DiffResult.NOTHING_TO_DIFF);
           }
         } else {
-          resolve(DiffResult.FILE_DOES_NOT_EXIST_LOCALLY);
+          reject(DiffResult.EDITOR_NOT_ABLE_TO_DIFF);
         }
-      });
-    } else {
-      return Promise.reject(DiffResult.EDITOR_NOT_ABLE_TO_DIFF);
-    }
+      } else {
+        resolve(DiffResult.FILE_DOES_NOT_EXIST_LOCALLY);
+      }
+    });
   }
 
-  public retrieveApexComponent(): Promise<ISalesforceApexComponentRecord | undefined> {
+  public retrieveApexComponents(): Promise<ISalesforceApexComponentRecord | undefined> {
     return new Promise((resolve, reject) => {
       this.salesforceConnection.login().then((connection: jsforce.Connection) => {
-        connection
+        return connection
           .sobject('ApexComponent')
           .find({})
           .execute({ autoFetch: true })
@@ -156,5 +157,48 @@ export class SalesforceAPI {
           });
       });
     });
+  }
+
+  public downloadApexComponent(componentName: string): Promise<ISalesforceApexComponentRecord> {
+    return this.salesforceConnection.login().then((connection: jsforce.Connection) => {
+      return connection
+        .sobject('ApexComponent')
+        .find({
+          name: componentName
+        })
+        .limit(1)
+        .execute()
+        .then((records: ISalesforceApexComponentRecord[]) => {
+          if (records && !_.isEmpty(records)) {
+            return records[0];
+          } else {
+            return Promise.reject(`Component not found in our salesforce organization : ${componentName}`);
+          }
+        });
+    });
+  }
+
+  public uploadApexComponent(componentName: string): Promise<jsforceextension.MedataUpsertResult> {
+    return this.salesforceConnection.login().then((connection: jsforceextension.ConnectionExtends) => {
+      const content = this.getContentOfFileLocally(componentName);
+      if (content) {
+        return connection.metadata
+          .upsert('ApexComponent', {
+            apiVersion: 25,
+            fullName: componentName,
+            label: componentName,
+            content: new Buffer(content).toString('base64')
+          })
+          .then(metadataUpsertResult => {
+            return metadataUpsertResult;
+          });
+      } else {
+        return Promise.reject(`Cannot upload empty files`);
+      }
+    });
+  }
+
+  private saveComponentInDiffStore(componentName: string, location: SalesforceResourceLocation, content: string) {
+    DiffContentStore.add(SalesforceResourceContentProvider.getDiffStoreScheme(componentName, location), content);
   }
 }

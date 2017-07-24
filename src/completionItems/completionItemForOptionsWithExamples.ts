@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 import * as htmlToText from 'html-to-text';
 import { IDocumentation, ReferenceDocumentation } from '../referenceDocumentation';
+import { l } from '../strings/Strings';
 
 export class CompletionItemForOptionsWithExamples extends vscode.CompletionItem {
   constructor(public possibleValues: string[], public optionDocumentation: IDocumentation) {
-    super(`Possible Coveo option values ...`, vscode.CompletionItemKind.TypeParameter);
+    super(l('PossibleOptionValues'), vscode.CompletionItemKind.TypeParameter);
     const htmlToTransform = ` <h1>Example(s) : </h1> <pre>${this.createMarkupExamples()}</pre> ${optionDocumentation.comment}`;
     this.documentation = htmlToText.fromString(htmlToTransform, {
       ignoreHref: true,

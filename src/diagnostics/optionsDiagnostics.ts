@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as _ from 'lodash';
 import { ReferenceDocumentation, IDocumentation } from '../referenceDocumentation';
 import { getAllComponentsSymbol, doCompleteScanOfSymbol, IScanOfAttributeValue } from '../documentService';
+import { l } from '../strings/Strings';
 
 export class OptionsDiagnostics {
   constructor(public referenceDocumentation: ReferenceDocumentation) {}
@@ -40,7 +41,7 @@ export class OptionsDiagnostics {
         duplicates.map(duplicate => {
           return new vscode.Diagnostic(
             duplicate.rangeInDocument,
-            'Remove duplicate option inside the same component.',
+            l('RemoveDuplicateOption'),
             vscode.DiagnosticSeverity.Error
           );
         })
@@ -66,10 +67,11 @@ export class OptionsDiagnostics {
         missingRequiredOptions.map(missingRequiredOption => {
           return new vscode.Diagnostic(
             componentSymbol.location.range,
-            `The option ${missingRequiredOption.option
-              .name} is required. Markup value is ${ReferenceDocumentation.camelCaseToHyphen(
-              missingRequiredOption.option.name
-            )}`,
+            l(
+              'MissingRequiredOption',
+              missingRequiredOption.option.name,
+              ReferenceDocumentation.camelCaseToHyphen(missingRequiredOption.option.name)
+            ),
             vscode.DiagnosticSeverity.Error
           );
         })
@@ -118,8 +120,7 @@ export class OptionsDiagnostics {
               valueNotPossibleInAttribute =>
                 new vscode.Diagnostic(
                   range,
-                  `Value ${valueNotPossibleInAttribute} is not a valid value for the option ${optionThatIsPossiblyInError
-                    .option.name}`,
+                  l('OptionNotValid', valueNotPossibleInAttribute, optionThatIsPossiblyInError.option.name),
                   vscode.DiagnosticSeverity.Error
                 )
             )
@@ -169,10 +170,7 @@ export class OptionsDiagnostics {
   private diagnoseInvalidBooleanType(scan: IScanOfAttributeValue, options: IDocumentation): vscode.Diagnostic | null {
     const attributeValue = scan.attributeValue.toLowerCase();
     if (attributeValue != 'true' && attributeValue != 'false') {
-      return new vscode.Diagnostic(
-        scan.rangeInDocument,
-        `Option ${options.name} is of type : ${options.type}. Value should be "true" or "false"`
-      );
+      return new vscode.Diagnostic(scan.rangeInDocument, l('OptionNotValidBoolean', options.name, options.type));
     }
     return null;
   }
@@ -180,10 +178,7 @@ export class OptionsDiagnostics {
   private diagnoseInvalidNumberType(scan: IScanOfAttributeValue, options: IDocumentation): vscode.Diagnostic | null {
     const attributeValue = scan.attributeValue.toLowerCase();
     if (attributeValue == '' || isNaN(Number(attributeValue).valueOf())) {
-      return new vscode.Diagnostic(
-        scan.rangeInDocument,
-        `Option ${options.name} is of type : ${options.type}. Value should be a valid number.`
-      );
+      return new vscode.Diagnostic(scan.rangeInDocument, l('OptionNotValidNumber', options.name, options.type));
     }
     return null;
   }
@@ -191,10 +186,7 @@ export class OptionsDiagnostics {
   private diagnoseInvalidFieldType(scan: IScanOfAttributeValue, options: IDocumentation): vscode.Diagnostic | null {
     const attributeValue = scan.attributeValue.toLowerCase();
     if (!/^@[a-zA-Z0-9_\.]+$/.test(attributeValue)) {
-      return new vscode.Diagnostic(
-        scan.rangeInDocument,
-        `Option ${options.name} is of type : ${options.type}. Value should be a valid Coveo field. Should start with @ and followed by alpha-numeric characters.`
-      );
+      return new vscode.Diagnostic(scan.rangeInDocument, l('OptionNotValidField', options.name, options.type));
     }
     return null;
   }

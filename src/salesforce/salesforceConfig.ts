@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { l } from '../strings/Strings';
 
 export class SalesforceConfig {
   private orgConfig: vscode.WorkspaceConfiguration;
@@ -11,7 +12,7 @@ export class SalesforceConfig {
     let isValid = true;
     const showWarningMessage = (section: string) => {
       if (!silent) {
-        vscode.window.showWarningMessage(`Missing configuration for coveocode.salesforce.organization.${section}`);
+        vscode.window.showWarningMessage(l('SalesforceMissingConfig', section));
       }
     };
 

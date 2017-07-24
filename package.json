@@ -31,7 +31,8 @@
                 ],
                 "extensions": [
                     ".cmp",
-                    ".component"
+                    ".component",
+                    ".page"
                 ],
                 "configuration": "./visualforce.configuration.json"
             }
@@ -49,16 +50,16 @@
                 "command": "coveo.takeLocal",
                 "title": "Take local version",
                 "icon": {
-                    "light": "./media/floppy-light.svg",
-                    "dark": "./media/floppy-dark.svg"
+                    "light": "./media/take-local-light.svg",
+                    "dark": "./media/take-local-dark.svg"
                 }
             },
             {
                 "command": "coveo.takeRemote",
                 "title": "Take remote version",
                 "icon": {
-                    "light": "./media/cloud-download-light.svg",
-                    "dark": "./media/cloud-download-dark.svg"
+                    "light": "./media/take-remote-light.svg",
+                    "dark": "./media/take-remote-dark.svg"
                 }
             },
             {
@@ -106,13 +107,11 @@
                 },
                 {
                     "command": "coveo.takeLocal",
-                    "when": "editorLangId == visualforce && textCompareEditorVisible",
-                    "group": "navigation"
+                    "when": "editorLangId == visualforce && textCompareEditorVisible"
                 },
                 {
                     "command": "coveo.takeRemote",
-                    "when": "editorLangId == visualforce && textCompareEditorVisible",
-                    "group": "navigation"
+                    "when": "editorLangId == visualforce && textCompareEditorVisible"
                 },
                 {
                     "command": "coveo.salesforce.upload",
@@ -188,6 +187,7 @@
         "cheerio": "^1.0.0-rc.2",
         "coveo-search-ui": "^2.2900.14",
         "html-to-text": "^3.3.0",
+        "i18n-2": "^0.7.0",
         "jsforce": "^1.8.0",
         "lodash": "^4.17.4",
         "remove-markdown": "^0.1.0",

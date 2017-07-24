@@ -15,7 +15,19 @@
         "no-default-export": true,
         "ordered-imports": false,
         "object-literal-sort-keys": false,
-        "max-line-length": 140
+        "max-line-length": 140,
+        "no-angle-bracket-type-assertion": false,
+        "no-var-requires": false,
+        "whitespace": [
+            true,
+            "check-branch",
+            "check-decl",
+            "check-operator",
+            "check-module",
+            "check-separator",
+            "check-type",
+            "check-preblock"
+        ]
     },
     "rulesDirectory": []
 }

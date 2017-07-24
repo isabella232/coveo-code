@@ -9,6 +9,7 @@ import { DiffContentStore } from '../diffContentStore';
 import path = require('path');
 import fs = require('fs');
 import * as jsforceextension from '../definitions/jsforce';
+import { l } from '../strings/Strings';
 
 interface ISalesforceApexComponentRecord {
   Name: string;
@@ -60,7 +61,7 @@ export class SalesforceAPI {
         return true;
       });
     }
-    return Promise.reject(`No active root path for current workspace`);
+    return Promise.reject(l('NoActivePath'));
   }
 
   public getPathOfFileLocally(componentName: string) {
@@ -83,10 +84,6 @@ export class SalesforceAPI {
     return undefined;
   }
 
-  /*public getContentOfFileRemote(componentName: string): Promise<string | undefined> {
-    //return this.downloadApexComponent
-  }*/
-
   public diffComponentWithLocalVersion(componentName: string): Promise<DiffResult> {
     return new Promise((resolve, reject) => {
       const contentOfLocalFile = this.getContentOfFileLocally(componentName);
@@ -101,7 +98,7 @@ export class SalesforceAPI {
                 'vscode.diff',
                 SalesforceResourceContentProvider.getUri(componentName, SalesforceResourceLocation.LOCAL),
                 SalesforceResourceContentProvider.getUri(componentName, SalesforceResourceLocation.DIST),
-                'Comparing: Local \u2194 Remote (Salesforce)'
+                l('CompareLocalRemote', 'Salesforce')
               )
               .then(
                 success => {
@@ -126,76 +123,100 @@ export class SalesforceAPI {
   public retrieveApexComponents(): Promise<ISalesforceApexComponentRecord | undefined> {
     return new Promise((resolve, reject) => {
       this.salesforceConnection.login().then((connection: jsforce.Connection) => {
-        return connection
-          .sobject('ApexComponent')
-          .find({})
-          .execute({ autoFetch: true })
-          .then((records: ISalesforceApexComponentRecord[]) => {
-            return vscode.window
-              .showQuickPick(_.map(records, record => record.Name), {
-                ignoreFocusOut: true,
-                placeHolder: `Please select the Apex component which contains the Coveo component to edit`,
-                matchOnDetail: true,
-                matchOnDescription: true
-              })
-              .then(selected => {
-                if (selected) {
-                  const recordSelected = _.find(records, record => record.Name == selected);
-                  if (recordSelected) {
-                    DiffContentStore.add(
-                      `${SalesforceResourceContentProvider.getDiffStoreScheme(
-                        recordSelected.Name,
-                        SalesforceResourceLocation.DIST
-                      )}`,
-                      recordSelected.Markup
-                    );
-                  }
-                  resolve(recordSelected);
-                }
-                resolve(undefined);
+        return vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Window,
+            title: l('SalesforceConnection')
+          },
+          progress => {
+            progress.report({ message: l('SalesforceListingApex') });
+            return connection
+              .sobject('ApexComponent')
+              .find({})
+              .execute({ autoFetch: true })
+              .then((records: ISalesforceApexComponentRecord[]) => {
+                progress.report({ message: l('SalesforceChooseList') });
+                return vscode.window
+                  .showQuickPick(_.map(records, record => record.Name), {
+                    ignoreFocusOut: true,
+                    placeHolder: l('SalesforceSelectComponent'),
+                    matchOnDetail: true,
+                    matchOnDescription: true
+                  })
+                  .then(selected => {
+                    if (selected) {
+                      const recordSelected = _.find(records, record => record.Name == selected);
+                      if (recordSelected) {
+                        DiffContentStore.add(
+                          `${SalesforceResourceContentProvider.getDiffStoreScheme(
+                            recordSelected.Name,
+                            SalesforceResourceLocation.DIST
+                          )}`,
+                          recordSelected.Markup
+                        );
+                      }
+                      resolve(recordSelected);
+                    }
+                    resolve(undefined);
+                  });
               });
-          });
+          }
+        );
       });
     });
   }
 
   public downloadApexComponent(componentName: string): Promise<ISalesforceApexComponentRecord> {
-    return this.salesforceConnection.login().then((connection: jsforce.Connection) => {
-      return connection
-        .sobject('ApexComponent')
-        .find({
-          name: componentName
-        })
-        .limit(1)
-        .execute()
-        .then((records: ISalesforceApexComponentRecord[]) => {
-          if (records && !_.isEmpty(records)) {
-            return records[0];
-          } else {
-            return Promise.reject(`Component not found in our salesforce organization : ${componentName}`);
-          }
+    return <Promise<ISalesforceApexComponentRecord>>vscode.window.withProgress(
+      {
+        title: l('SalesforceConnection'),
+        location: vscode.ProgressLocation.Window
+      },
+      progress => {
+        return this.salesforceConnection.login().then((connection: jsforce.Connection) => {
+          progress.report({ message: l('SalesforceListingApex') });
+          return connection
+            .sobject('ApexComponent')
+            .find({
+              name: componentName
+            })
+            .limit(1)
+            .execute()
+            .then((records: ISalesforceApexComponentRecord[]) => {
+              if (records && !_.isEmpty(records)) {
+                return records[0];
+              } else {
+                return Promise.reject(l('SalesforceComponentNotFound', componentName));
+              }
+            });
         });
-    });
+      }
+    );
   }
 
-  public uploadApexComponent(componentName: string): Promise<jsforceextension.MedataUpsertResult> {
-    return this.salesforceConnection.login().then((connection: jsforceextension.ConnectionExtends) => {
-      const content = this.getContentOfFileLocally(componentName);
-      if (content) {
-        return connection.metadata
-          .upsert('ApexComponent', {
-            apiVersion: 25,
-            fullName: componentName,
-            label: componentName,
-            content: new Buffer(content).toString('base64')
-          })
-          .then(metadataUpsertResult => {
-            return metadataUpsertResult;
-          });
-      } else {
-        return Promise.reject(`Cannot upload empty files`);
+  public uploadApexComponent(componentName: string): Promise<jsforceextension.IMedataUpsertResult> {
+    return <Promise<jsforceextension.IMedataUpsertResult>>vscode.window.withProgress(
+      {
+        title: l('SalesforceConnection'),
+        location: vscode.ProgressLocation.Window
+      },
+      progress => {
+        return this.salesforceConnection.login().then((connection: jsforceextension.ConnectionExtends) => {
+          progress.report({ message: l('SalesforceUploadProgress') });
+          const content = this.getContentOfFileLocally(componentName);
+          if (content) {
+            return connection.metadata.upsert('ApexComponent', {
+              apiVersion: 25,
+              fullName: componentName,
+              label: componentName,
+              content: new Buffer(content).toString('base64')
+            });
+          } else {
+            return Promise.reject(l('CannotUploadEmpty'));
+          }
+        });
       }
-    });
+    );
   }
 
   private saveComponentInDiffStore(componentName: string, location: SalesforceResourceLocation, content: string) {

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as _ from 'lodash';
+
 import { ReferenceDocumentation, IDocumentation } from '../referenceDocumentation';
 import {
   getComponentAtPosition,
@@ -29,23 +30,25 @@ export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider
       const currentResultTemplate = getResultTemplateAtPosition(position, document);
 
       if (currentOption) {
-        completionItems = completionItems.concat(this.provideCompletionsForComponentOptions(currentOption));
+        completionItems = completionItems.concat(this.provideCompletionsForComponentOptionsValues(currentOption));
       } else if (currentOptionInResultTemplate) {
         completionItems = completionItems.concat(
           this.provideCompletionsForResultTemplateAttribute(currentOptionInResultTemplate)
         );
       } else if (currentComponent) {
         completionItems = completionItems.concat(
-          this.providecompletionCompletionsForComponent(currentComponent, position, document)
+          this.provideCompletionCompletionsForComponentOptions(currentComponent, position, document)
         );
       } else if (currentResultTemplate) {
         completionItems = completionItems.concat(this.provideCompletionsForResultTemplate());
+      } else {
+        // TODO completions on component names
       }
       resolve(completionItems);
     });
   }
 
-  private provideCompletionsForComponentOptions(currentOption: IDocumentation) {
+  private provideCompletionsForComponentOptionsValues(currentOption: IDocumentation) {
     return new ComponentOptionValues(currentOption).getCompletions();
   }
 
@@ -53,7 +56,7 @@ export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider
     return new ResultTemplate().getCompletionsForAttributesValues(currentResultTemplateAttribute);
   }
 
-  private providecompletionCompletionsForComponent(
+  private provideCompletionCompletionsForComponentOptions(
     currentComponent: IDocumentation,
     position: vscode.Position,
     document: vscode.TextDocument
@@ -71,7 +74,25 @@ export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider
       .value();
   }
 
+  private provideCompletionsForComponentName(document: vscode.TextDocument, position: vscode.Position) {
+    const completions: vscode.CompletionItem[] = [];
+    const completeScan = doCompleteScanOfCurrentSymbol(document, position);
+    const classNameIsBeingCompleted = _.filter(
+      completeScan,
+      scan => scan.attributeName == 'class' && scan.activeUnderCursor
+    );
+    if (classNameIsBeingCompleted) {
+      // TODO need some manner to filter raw documentation to get valid components only
+      // Currently, the documentation also contains interface or generic classes which are not valid Coveo components
+    }
+    return completions;
+  }
+
   private provideCompletionsForResultTemplate() {
     return new ResultTemplate().getCompletionsForAttributes();
+  }
+
+  private provideCompletionsForComponentNames() {
+    return;
   }
 }

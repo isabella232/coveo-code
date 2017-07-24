@@ -1,6 +1,7 @@
 import { SalesforceConfig } from './salesforceConfig';
 import * as jsforce from 'jsforce';
 import * as vscode from 'vscode';
+import { l } from '../strings/Strings';
 
 export class SalesforceConnection {
   private static validConnection: jsforce.Connection | undefined;
@@ -18,20 +19,26 @@ export class SalesforceConnection {
     if (SalesforceConnection.validConnection) {
       return Promise.resolve(SalesforceConnection.validConnection);
     } else {
-      const username = this.config.getUsername();
-      const password = this.config.getPassword();
-      const securityToken = this.config.getSecurityToken();
-      if (username && password) {
-        return this.connection.login(username, password + securityToken).then(userInfo => {
-          vscode.window.setStatusBarMessage(
-            `Connected to Salesforce as ${username} to organization ${userInfo.organizationId}`
-          );
-          SalesforceConnection.validConnection = this.connection;
-          return SalesforceConnection.validConnection;
-        });
-      } else {
-        return Promise.reject('Invalid salesforce login configuration');
-      }
+      return <Promise<jsforce.Connection>>vscode.window.withProgress(
+        {
+          title: l('SalesforceConnection'),
+          location: vscode.ProgressLocation.Window
+        },
+        (progress): Promise<jsforce.Connection> => {
+          const username = this.config.getUsername();
+          const password = this.config.getPassword();
+          const securityToken = this.config.getSecurityToken();
+          if (username && password) {
+            progress.report({ message: l('SaleforceConnecting') });
+            return this.connection.login(username, password + securityToken).then(userInfo => {
+              SalesforceConnection.validConnection = this.connection;
+              return SalesforceConnection.validConnection;
+            });
+          } else {
+            return Promise.reject(l('SalesforceInvalidLoginConfig'));
+          }
+        }
+      );
     }
   }
 

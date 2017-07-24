@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { getComponentAtPosition, getOptionAtPosition } from '../documentService';
 import { ReferenceDocumentation } from '../referenceDocumentation';
+import { l } from '../strings/Strings';
 
 const baseComponentDocumentationLink = `https://coveo.github.io/search-ui/components/`;
 
@@ -11,9 +12,7 @@ export class OnlineDocumentationProvider {
     const currentComponent = getComponentAtPosition(this.referenceDocumentation, position, document);
     const currentOption = getOptionAtPosition(this.referenceDocumentation, position, document);
     if (!currentComponent) {
-      vscode.window.showInformationMessage(
-        'The current selected element is not a Coveo component or no documentation is available'
-      );
+      vscode.window.showInformationMessage(l('NoDocumentation'));
     } else {
       let componentLink = `${baseComponentDocumentationLink}${currentComponent.name.toLowerCase()}.html`;
       if (currentOption) {

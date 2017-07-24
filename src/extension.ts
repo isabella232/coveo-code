@@ -1,6 +1,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
+import { l } from './strings/Strings';
 import { ReferenceDocumentation } from './referenceDocumentation';
 import { HTMLCompletionItemProvider } from './provider/htmlCompletionItemProvider';
 import { DiagnosticProvider } from './provider/diagnosticProvider';
@@ -67,9 +68,10 @@ function provideCommandToRetrieveAnyComponentFromSalesforce() {
                 return false;
               }
             });
-          } else {
-            return Promise.resolve(undefined);
+          } else if (outcome == DiffResult.NOTHING_TO_DIFF) {
+            vscode.window.showInformationMessage(l('NoDiff'));
           }
+          return Promise.resolve(undefined);
         });
       } else {
         return undefined;
@@ -84,16 +86,14 @@ function provideCommandToUploadComponentToSalesforce() {
     if (componentName) {
       return salesforceAPI.uploadApexComponent(componentName).then(metadataUpsertResult => {
         if (metadataUpsertResult.success) {
-          vscode.window.showInformationMessage(
-            `Ressource succesfully uploaded to Salesforce as a Visualforce Component with the name ${metadataUpsertResult.fullName}`
-          );
+          vscode.window.showInformationMessage(l('SalesforceUploadSuccess', metadataUpsertResult.fullName));
         } else {
           vscode.window.showErrorMessage(`Message: ${metadataUpsertResult.errors.message}`);
           vscode.window.showErrorMessage(`Status code: ${metadataUpsertResult.errors.statusCode}`);
         }
       });
     } else {
-      return Promise.reject(`Invalid uri scheme : ${uri.toString()}`);
+      return Promise.reject(l('InvalidUriScheme', uri.toString()));
     }
   });
 }
@@ -111,11 +111,11 @@ function provideCommandToDownloadComponentFromSalesforce() {
             return salesforceAPI.saveFile(componentName, record.Markup);
           }
         } else {
-          return Promise.reject(`Component not found in our salesforce organization : ${componentName}`);
+          return Promise.reject(l('SalesforceComponentNotFound', componentName));
         }
       });
     } else {
-      return Promise.reject(`Invalid uri scheme : ${uri.toString()}`);
+      return Promise.reject(l('InvalidUriScheme', uri.toString()));
     }
   });
 }
@@ -130,7 +130,7 @@ function provideCommandToTakeRemoteFileFromSalesforce() {
         });
       });
     } else {
-      return Promise.reject(`Invalid uri scheme : ${uri.toString()}`);
+      return Promise.reject(l('InvalidUriScheme', uri.toString()));
     }
   });
 }

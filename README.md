@@ -1,4 +1,4 @@
-# coveo-code
+# coveo-code Coveo Search UI development support for Visual Studio Code
 
 Visual Studio Code plugin for Coveo Search UI. This plugin is designed to help build and deploy Coveo Search pages built using the [Coveo Search UI framework](https://github.com/coveo/search-ui)
 

@@ -109,6 +109,7 @@ export class SalesforceAPI {
                 }
               );
           } else {
+            vscode.window.showInformationMessage(l('NoDiff'));
             resolve(DiffResult.NOTHING_TO_DIFF);
           }
         } else {
@@ -184,6 +185,7 @@ export class SalesforceAPI {
             .execute()
             .then((records: ISalesforceApexComponentRecord[]) => {
               if (records && !_.isEmpty(records)) {
+                this.saveComponentInDiffStore(componentName, SalesforceResourceLocation.DIST, records[0].Markup);
                 return records[0];
               } else {
                 return Promise.reject(l('SalesforceComponentNotFound', componentName));

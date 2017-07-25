@@ -19,8 +19,8 @@ const salesforceAPI = new SalesforceAPI();
 
 export function activate(context: vscode.ExtensionContext) {
   // Generic
-  provideCompletionForMarkup(context, 'html');
-  provideDiagnosticsForMarkup(context, 'html');
+  provideCompletionForMarkup(context);
+  provideDiagnosticsForMarkup(context);
   provideContextMenu(context);
 
   // Salesforce specific
@@ -31,8 +31,6 @@ export function activate(context: vscode.ExtensionContext) {
   provideCommandToDownloadComponentFromSalesforce();
   provideCommandToTakeRemoteFileFromSalesforce();
   provideCommandToTakeLocalFileForSalesforce();
-  provideCompletionForMarkup(context, 'visualforce');
-  provideDiagnosticsForMarkup(context, 'visualforce');
 }
 
 function provideDiffForSalesforceResources(context: vscode.ExtensionContext) {
@@ -68,8 +66,6 @@ function provideCommandToRetrieveAnyComponentFromSalesforce() {
                 return false;
               }
             });
-          } else if (outcome == DiffResult.NOTHING_TO_DIFF) {
-            vscode.window.showInformationMessage(l('NoDiff'));
           }
           return Promise.resolve(undefined);
         });
@@ -154,8 +150,8 @@ function provideContextMenu(context: vscode.ExtensionContext) {
   context.subscriptions.push(commandProvider);
 }
 
-function provideDiagnosticsForMarkup(context: vscode.ExtensionContext, langId: string) {
-  const diagnosticsCollection = vscode.languages.createDiagnosticCollection(langId);
+function provideDiagnosticsForMarkup(context: vscode.ExtensionContext) {
+  const diagnosticsCollection = vscode.languages.createDiagnosticCollection();
   const diagnosticProvider = new DiagnosticProvider(diagnosticsCollection, refererenceDocumentation);
   const doUpdateDiagnostics = (documentOpened: vscode.TextDocument) => {
     if (vscode.window.activeTextEditor && documentOpened === vscode.window.activeTextEditor.document) {
@@ -169,9 +165,9 @@ function provideDiagnosticsForMarkup(context: vscode.ExtensionContext, langId: s
   context.subscriptions.push(diagnosticsCollection);
 }
 
-function provideCompletionForMarkup(context: vscode.ExtensionContext, langId: string) {
+function provideCompletionForMarkup(context: vscode.ExtensionContext) {
   const htmlCompletionProvider = vscode.languages.registerCompletionItemProvider(
-    langId,
+    ['html', 'visualforce'],
     new HTMLCompletionItemProvider(refererenceDocumentation)
   );
   context.subscriptions.push(htmlCompletionProvider);

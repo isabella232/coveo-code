@@ -17,6 +17,7 @@ import { ResultTemplate } from '../completionItems/resultTemplate';
 
 export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider {
   constructor(public referenceDocumentation: ReferenceDocumentation) {}
+
   public provideCompletionItems(
     document: vscode.TextDocument,
     position: vscode.Position,

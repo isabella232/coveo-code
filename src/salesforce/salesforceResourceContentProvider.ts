@@ -15,7 +15,7 @@ export class SalesforceResourceContentProvider implements vscode.TextDocumentCon
 
   public static getUri(componentName: string, location: SalesforceResourceLocation): vscode.Uri {
     return vscode.Uri.parse(
-      `${SalesforceResourceContentProvider.scheme}://location:${location}/key:${componentName}.cmp`
+      `${SalesforceResourceContentProvider.scheme}://location:${location}/key:${componentName}.cmp?tstamp=${Date.now()}`
     );
   }
 

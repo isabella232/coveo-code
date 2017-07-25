@@ -6,7 +6,9 @@ import { l } from '../strings/Strings';
 export class CompletionItemForOptionsWithExamples extends vscode.CompletionItem {
   constructor(public possibleValues: string[], public optionDocumentation: IDocumentation) {
     super(l('PossibleOptionValues'), vscode.CompletionItemKind.TypeParameter);
-    const htmlToTransform = ` <h1>Example(s) : </h1> <pre>${this.createMarkupExamples()}</pre> ${optionDocumentation.comment}`;
+    const htmlToTransform = ` <h1>Example(s) : </h1> <pre>${this.createMarkupExamples().join(
+      '\n'
+    )}</pre> ${optionDocumentation.comment}`;
     this.documentation = htmlToText.fromString(htmlToTransform, {
       ignoreHref: true,
       wordwrap: null,
@@ -27,8 +29,7 @@ export class CompletionItemForOptionsWithExamples extends vscode.CompletionItem 
 
   private createMarkupExamples(): string[] {
     return this.possibleValues.map(
-      possibleValue =>
-        `${ReferenceDocumentation.camelCaseToHyphen(this.optionDocumentation.name)}='${possibleValue}'<br/>`
+      possibleValue => `${ReferenceDocumentation.camelCaseToHyphen(this.optionDocumentation.name)}='${possibleValue}'`
     );
   }
 }

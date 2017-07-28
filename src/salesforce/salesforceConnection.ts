@@ -8,11 +8,19 @@ export class SalesforceConnection {
 
   private connection: jsforce.Connection;
   constructor(public config: SalesforceConfig) {
-    if (config.doValidation()) {
-      this.connection = new jsforce.Connection({
-        loginUrl: config.getOrganizationUrl()
-      });
-    }
+    const createConnection = () => {
+      if (config.doValidation()) {
+        this.connection = new jsforce.Connection({
+          loginUrl: config.getOrganizationUrl()
+        });
+      }
+    };
+    createConnection();
+
+    vscode.workspace.onDidChangeConfiguration(() => {
+      this.invalidateConnection();
+      createConnection();
+    });
   }
 
   public login(): Promise<jsforce.Connection> {
@@ -25,16 +33,21 @@ export class SalesforceConnection {
           location: vscode.ProgressLocation.Window
         },
         (progress): Promise<jsforce.Connection> => {
-          const username = this.config.getUsername();
-          const password = this.config.getPassword();
-          const securityToken = this.config.getSecurityToken();
-          if (username && password) {
-            progress.report({ message: l('SaleforceConnecting') });
-            return this.connection.login(username, password + securityToken).then(userInfo => {
-              SalesforceConnection.validConnection = this.connection;
-              return SalesforceConnection.validConnection;
-            });
+          if (this.config.doValidation()) {
+            const username = this.config.getUsername();
+            const password = this.config.getPassword();
+            const securityToken = this.config.getSecurityToken();
+            if (username && password) {
+              progress.report({ message: l('SaleforceConnecting') });
+              return this.connection.login(username, password + securityToken).then(userInfo => {
+                SalesforceConnection.validConnection = this.connection;
+                return SalesforceConnection.validConnection;
+              });
+            } else {
+              return Promise.reject(l('SalesforceInvalidLoginConfig'));
+            }
           } else {
+            this.config.doValidation(false);
             return Promise.reject(l('SalesforceInvalidLoginConfig'));
           }
         }

@@ -22,8 +22,13 @@ export interface IMedataUpsertResult {
 export class MetadataActions {
   public update(resource: string, metadata: IMetadataForComponent, callback?: () => any): Promise<any>;
   public upsert(resource: string, metadata: IMetadataForComponent, callback?: () => any): Promise<IMedataUpsertResult>;
+  public read(resource: string, names: string[]): Promise<any>;
 }
 
 export class ConnectionExtends extends jsforce.Connection {
   public metadata: MetadataActions;
+  public query(SOQL: string): Promise<any>;
+  public apex: any;
+  public instanceUrl: string;
+  accessToken: string;
 }

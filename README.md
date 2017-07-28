@@ -1,4 +1,4 @@
-# coveo-code Coveo Search UI development support for Visual Studio Code
+# coveo-code
 
 Visual Studio Code plugin for Coveo Search UI. This plugin is designed to help build and deploy Coveo Search pages built using the [Coveo Search UI framework](https://github.com/coveo/search-ui)
 
@@ -53,7 +53,7 @@ To connect to your Salesforce organization, you need provide your username, pass
 - Provide possible options values which match the option type when possible.
 - Provide snippets for result templates.
 
-  <img id='completion-1' src='./media/completion-1.gif' />
+  <img id='completion-1' src='https://raw.githubusercontent.com/coveo/coveo-code/master/media/completion-1.gif' />
 
 ### Configuration error diagnostics
 
@@ -61,13 +61,13 @@ To connect to your Salesforce organization, you need provide your username, pass
 - Diagnose invalid option types
 - Diagnose invalid result template content
 
-  <img id='diagnostic-1' src='./media/diagnostic-1.gif' />
+  <img id='diagnostic-1' src='https://raw.githubusercontent.com/coveo/coveo-code/master/media/diagnostic-1.gif' />
 
 ### Commands and menu options
 
 - Show online documentation about the selected component or component option
 
-  <img id='menu-1' src='./media/menu-1.gif' />
+  <img id='menu-1' src='https://raw.githubusercontent.com/coveo/coveo-code/master/media/menu-1.gif' />
 
 ### Salesforce compatible 
 
@@ -75,4 +75,4 @@ To connect to your Salesforce organization, you need provide your username, pass
 - Diff and upload local changes directly to your Salesforce organization.
 - Create new Visualforce component locally and upload them to your Salesforce organization
 
-  <img id='menu-1' src='./media/salesforce-1.gif' />
+  <img id='menu-1' src='https://raw.githubusercontent.com/coveo/coveo-code/master/media/salesforce-1.gif' />

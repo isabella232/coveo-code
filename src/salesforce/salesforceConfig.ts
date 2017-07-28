@@ -5,14 +5,18 @@ export class SalesforceConfig {
   private orgConfig: vscode.WorkspaceConfiguration;
   private localConfig: vscode.WorkspaceConfiguration;
   constructor() {
-    this.orgConfig = vscode.workspace.getConfiguration('coveocode.salesforce.organization');
-    this.localConfig = vscode.workspace.getConfiguration('coveocode.salesforce.local');
+    const setConfig = () => {
+      this.orgConfig = vscode.workspace.getConfiguration('coveocode.salesforce.organization');
+      this.localConfig = vscode.workspace.getConfiguration('coveocode.salesforce.local');
+    };
+    setConfig();
+    vscode.workspace.onDidChangeConfiguration(() => setConfig());
   }
   public doValidation(silent = true): boolean {
     let isValid = true;
     const showWarningMessage = (section: string) => {
       if (!silent) {
-        vscode.window.showWarningMessage(l('SalesforceMissingConfig', section));
+        vscode.window.showErrorMessage(l('SalesforceMissingConfig', section));
       }
     };
 

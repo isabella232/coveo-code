@@ -1,0 +1,5 @@
+<apex:page tabStyle="Search__tab" standardstylesheets="false" sidebar="false" docType="html-5.0">
+  <c:ConfigurationCheck needsIndex="false">
+    <c:SearchInterface mobile="false" />
+  </c:ConfigurationCheck>
+</apex:page>

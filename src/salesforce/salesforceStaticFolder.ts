@@ -1,9 +1,4 @@
-import {
-  SalesforceAPI,
-  ISalesforceApexComponentRecord,
-  ISalesforceStaticResourceFromZip,
-  SalesforceResourceLocation
-} from './salesforceAPI';
+import { SalesforceAPI, ISalesforceApexComponentRecord, SalesforceResourceLocation } from './salesforceAPI';
 import * as zlib from 'zlib';
 import { PassThrough } from 'stream';
 const parsePath = require('parse-filepath');
@@ -12,6 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { ApexResourceType } from './salesforceResourceTypes';
 import { l } from '../strings/Strings';
+import { SalesforceLocalFile } from './salesforceLocalFile';
 const AdmZip = require('adm-zip');
 const walk = require('walk');
 
@@ -25,20 +21,31 @@ export enum ExtractFolderResult {
   FOLDER_MERGE
 }
 
-export class SalesforceAPIStaticFolder {
+export interface ISalesforceStaticResourceFromZip extends ISalesforceApexComponentRecord {
+  isDirectory: boolean;
+  name: string;
+  entryName: string;
+  ContentType: string;
+  getData: () => Uint8Array[];
+}
+
+export class SalesforceStaticFolder {
   public static zip(fileInsideFolder: string): Promise<{ buffer: Buffer; resourceName: string }> {
-    const extract = SalesforceAPIStaticFolder.extractResourceInfoForFileInsizeZip(fileInsideFolder);
-    if (extract) {
+    const extractedInfo = SalesforceStaticFolder.extractResourceInfoForFileInsizeZip(fileInsideFolder);
+
+    if (extractedInfo) {
       return new Promise((resolve, reject) => {
         const zip = new AdmZip();
-        const walker = walk.walk(extract.folderToZip);
+        const walker = walk.walk(extractedInfo.folderToZip);
+
         walker.on('file', (root: string, fileStats: any, next: () => void) => {
           zip.addLocalFile(path.join(root, fileStats.name));
           next();
         });
+
         walker.on('end', () => {
-          zip.writeZip(extract.zipToWrite + '.zip');
-          resolve({ buffer: zip.toBuffer(), resourceName: extract.resourceName });
+          zip.writeZip(extractedInfo.zipToWrite + '.zip');
+          resolve({ buffer: zip.toBuffer(), resourceName: extractedInfo.resourceName });
         });
       });
     } else {
@@ -47,8 +54,8 @@ export class SalesforceAPIStaticFolder {
   }
 
   public static extractResourceInfoForFileInsizeZip(fileInsizeZip: string) {
-    const regex = /(.*\/([a-zA-Z]+))_unzip\//;
-    const match = fileInsizeZip.match(regex);
+    const match = fileInsizeZip.match(/(.*\/([a-zA-Z]+))_unzip\//);
+
     if (match) {
       return {
         folderToZip: match[0],
@@ -65,18 +72,23 @@ export class SalesforceAPIStaticFolder {
   public extract(res: { body: zlib.Gunzip | PassThrough }) {
     if (this.record != null) {
       return new Promise<ExtractFolderResult>((resolve, reject) => {
-        const standardPath = this.salesforceAPI.getStandardPathOfFileLocally(
+        const standardPath = SalesforceLocalFile.getStandardPathOfFileLocally(
           this.record.Name,
-          ApexResourceType.STATIC_RESOURCE_FOLDER
+          ApexResourceType.STATIC_RESOURCE_FOLDER,
+          this.salesforceAPI.config
         );
+
+        const standardPathUnzip = SalesforceLocalFile.getStandardPathOfFileLocally(
+          this.record.Name,
+          ApexResourceType.STATIC_RESOURCE_FOLDER_UNZIP,
+          this.salesforceAPI.config
+        );
+
         if (standardPath) {
           const parsedPath = parsePath(standardPath);
           mkdirp.sync(parsedPath.dir);
+
           res.body.pipe(fs.createWriteStream(standardPath)).on('finish', () => {
-            const standardPathUnzip = this.salesforceAPI.getStandardPathOfFileLocally(
-              this.record.Name,
-              ApexResourceType.STATIC_RESOURCE_FOLDER_UNZIP
-            );
             if (standardPathUnzip) {
               const zip = <IAdmZip>new AdmZip(standardPath);
 
@@ -86,6 +98,7 @@ export class SalesforceAPIStaticFolder {
                   allEntries.forEach(entry => {
                     this.saveContentInDiffStore(entry, standardPathUnzip);
                   });
+
                   resolve(ExtractFolderResult.NEW_FOLDER);
                 });
               } else {
@@ -93,7 +106,6 @@ export class SalesforceAPIStaticFolder {
                 allEntries.map(entry => {
                   return this.extractSingleFile(entry, standardPathUnzip);
                 });
-
                 Promise.all(allEntries).then(() => resolve(ExtractFolderResult.FOLDER_MERGE));
               }
             }
@@ -112,15 +124,16 @@ export class SalesforceAPIStaticFolder {
   }
 
   private saveContentInDiffStore(entry: ISalesforceStaticResourceFromZip, pathToUnzip: string) {
-    this.salesforceAPI.saveComponentInDiffStore(
+    SalesforceAPI.saveComponentInDiffStore(
       entry.entryName,
       ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP,
       SalesforceResourceLocation.DIST,
       entry.getData().toString()
     );
-    const localContent = this.salesforceAPI.getContentOfFileLocally(path.join(pathToUnzip, entry.entryName));
+
+    const localContent = SalesforceLocalFile.getContentOfFileLocally(path.join(pathToUnzip, entry.entryName));
     if (localContent) {
-      this.salesforceAPI.saveComponentInDiffStore(
+      SalesforceAPI.saveComponentInDiffStore(
         entry.entryName,
         ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP,
         SalesforceResourceLocation.LOCAL,
@@ -131,23 +144,22 @@ export class SalesforceAPIStaticFolder {
 
   private extractSingleFile(entry: ISalesforceStaticResourceFromZip, pathToUnzip: string) {
     this.saveContentInDiffStore(entry, pathToUnzip);
-    const localContent = this.salesforceAPI.getContentOfFileLocally(path.join(pathToUnzip, entry.entryName));
-    if (!entry.isDirectory) {
-      if (localContent) {
-        return this.salesforceAPI.diffComponentWithLocalVersion(
-          entry.entryName,
-          ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP,
-          path.join(pathToUnzip, entry.entryName)
-        );
-      } else {
-        return this.salesforceAPI.saveFile(
-          entry.entryName,
-          entry.getData().toString(),
-          path.join(pathToUnzip, entry.entryName)
-        );
-      }
-    } else {
+    const localContent = SalesforceLocalFile.getContentOfFileLocally(path.join(pathToUnzip, entry.entryName));
+
+    if (entry.isDirectory) {
       return Promise.resolve();
+    } else if (localContent) {
+      return this.salesforceAPI.diffComponentWithLocalVersion(
+        entry.entryName,
+        ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP,
+        path.join(pathToUnzip, entry.entryName)
+      );
+    } else {
+      return SalesforceLocalFile.saveFile(
+        entry.entryName,
+        entry.getData().toString(),
+        path.join(pathToUnzip, entry.entryName)
+      );
     }
   }
 }

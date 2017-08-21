@@ -11,14 +11,14 @@ import {
   SalesforceAPI,
   DiffResult,
   SalesforceResourceLocation,
-  ISalesforceApexComponentRecord,
-  ISalesforceStaticResourceFromZip
+  ISalesforceApexComponentRecord
 } from './salesforce/salesforceAPI';
 import { VisualforceFormattingProvider } from './provider/visualforceFormattingProvider';
 import { SalesforceResourceContentProvider } from './salesforce/salesforceResourceContentProvider';
 import { DiffContentStore } from './diffContentStore';
 import { ApexResourceType } from './salesforce/salesforceResourceTypes';
-import { SalesforceAPIStaticFolder } from './salesforce/salesforceAPIStaticFolder';
+import { SalesforceStaticFolder } from './salesforce/salesforceStaticFolder';
+import { SalesforceLocalFile } from './salesforce/salesforceLocalFile';
 
 const refererenceDocumentation = new ReferenceDocumentation();
 const salesforceAPI = new SalesforceAPI();
@@ -75,9 +75,14 @@ function afterRetrieve(
       content = recordRetrieved.Markup;
     }
 
-    const defaultPath = salesforceAPI.getStandardPathOfFileLocally(recordRetrieved.Name, type, contentType);
+    const defaultPath = SalesforceLocalFile.getStandardPathOfFileLocally(
+      recordRetrieved.Name,
+      type,
+      salesforceAPI.config,
+      contentType
+    );
     if (defaultPath) {
-      return salesforceAPI.saveFile(recordRetrieved.Name, content, defaultPath).then(() => {
+      return SalesforceLocalFile.saveFile(recordRetrieved.Name, content, defaultPath).then(() => {
         return vscode.workspace.openTextDocument(defaultPath).then(doc => {
           return vscode.window.showTextDocument(doc).then(() => true);
         });
@@ -147,9 +152,9 @@ function provideCommandToUploadApexToSalesforce() {
     if (!uri.fsPath && vscode.window.activeTextEditor) {
       uri = vscode.window.activeTextEditor.document.uri;
     }
-    const componentName = SalesforceAPI.getComponentNameFromFilePath(uri);
-    const componentType = SalesforceAPI.getResourceTypeFromFilePath(uri);
-    const content = salesforceAPI.getContentOfFileLocally(uri.fsPath);
+    const componentName = SalesforceLocalFile.getComponentNameFromFilePath(uri);
+    const componentType = SalesforceLocalFile.getResourceTypeFromFilePath(uri);
+    const content = SalesforceLocalFile.getContentOfFileLocally(uri.fsPath);
     if (componentName && componentType) {
       return salesforceAPI.uploadApex(componentName, componentType, content, uri).then(metadataUpsertResult => {
         if (metadataUpsertResult.success) {
@@ -172,19 +177,19 @@ function provideCommandToDownloadApexFromSalesforce() {
     if (!uri.fsPath && vscode.window.activeTextEditor) {
       uri = vscode.window.activeTextEditor.document.uri;
     }
-    const componentName = SalesforceAPI.getComponentNameFromFilePath(uri);
-    const componentType = SalesforceAPI.getResourceTypeFromFilePath(uri);
+    const componentName = SalesforceLocalFile.getComponentNameFromFilePath(uri);
+    const componentType = SalesforceLocalFile.getResourceTypeFromFilePath(uri);
     if (componentName && componentType) {
       if (componentType == ApexResourceType.APEX_COMPONENT || componentType == ApexResourceType.APEX_PAGE) {
         return salesforceAPI.downloadApex(componentName, componentType).then((record): Promise<
           DiffResult | boolean
         > => {
           if (record) {
-            const localFileContent = salesforceAPI.getContentOfFileLocally(uri.fsPath);
+            const localFileContent = SalesforceLocalFile.getContentOfFileLocally(uri.fsPath);
             if (localFileContent) {
               return salesforceAPI.diffComponentWithLocalVersion(componentName, componentType, uri.fsPath);
             } else {
-              return salesforceAPI.saveFile(componentName, record.Markup, uri.fsPath);
+              return SalesforceLocalFile.saveFile(componentName, record.Markup, uri.fsPath);
             }
           } else {
             return Promise.reject(l('SalesforceComponentNotFound', componentName));
@@ -193,7 +198,7 @@ function provideCommandToDownloadApexFromSalesforce() {
       } else {
         let toRetrieve = componentName;
         if (componentType == ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP) {
-          const extract = SalesforceAPIStaticFolder.extractResourceInfoForFileInsizeZip(uri.fsPath);
+          const extract = SalesforceStaticFolder.extractResourceInfoForFileInsizeZip(uri.fsPath);
           if (extract) {
             toRetrieve = extract.resourceName;
           }
@@ -224,9 +229,9 @@ function provideCommandToTakeRemoteFileFromSalesforce() {
           .downloadApex(componentName, componentType)
           .then(record => record.Markup)
           .then(content => {
-            return salesforceAPI
-              .saveFile(componentName, content, localPath)
-              .then(() => vscode.commands.executeCommand('workbench.action.closeActiveEditor'));
+            return SalesforceLocalFile.saveFile(componentName, content, localPath).then(() =>
+              vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+            );
           })
           .catch(() => Promise.reject(l('FileNotFound')));
       } else {
@@ -234,9 +239,9 @@ function provideCommandToTakeRemoteFileFromSalesforce() {
           SalesforceAPI.getDiffStoreScheme(componentName, componentType, SalesforceResourceLocation.DIST)
         );
         if (content) {
-          return salesforceAPI
-            .saveFile(componentName, content, localPath)
-            .then(() => vscode.commands.executeCommand('workbench.action.closeActiveEditor'));
+          return SalesforceLocalFile.saveFile(componentName, content, localPath).then(() =>
+            vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+          );
         } else {
           return Promise.reject(l('FileNotFound'));
         }

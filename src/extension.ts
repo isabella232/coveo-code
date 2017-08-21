@@ -10,7 +10,6 @@ import { SalesforceConnection } from './salesforce/salesforceConnection';
 import {
   SalesforceAPI,
   DiffResult,
-  ApexResourceType,
   SalesforceResourceLocation,
   ISalesforceApexComponentRecord,
   ISalesforceStaticResourceFromZip
@@ -18,6 +17,8 @@ import {
 import { VisualforceFormattingProvider } from './provider/visualforceFormattingProvider';
 import { SalesforceResourceContentProvider } from './salesforce/salesforceResourceContentProvider';
 import { DiffContentStore } from './diffContentStore';
+import { ApexResourceType } from './salesforce/salesforceResourceTypes';
+import { SalesforceAPIStaticFolder } from './salesforce/salesforceAPIStaticFolder';
 
 const refererenceDocumentation = new ReferenceDocumentation();
 const salesforceAPI = new SalesforceAPI();
@@ -143,11 +144,14 @@ function provideCommandToRetrieveStaticResources() {
 
 function provideCommandToUploadApexToSalesforce() {
   vscode.commands.registerCommand('coveo.salesforce.upload', (uri: vscode.Uri) => {
+    if (!uri.fsPath && vscode.window.activeTextEditor) {
+      uri = vscode.window.activeTextEditor.document.uri;
+    }
     const componentName = SalesforceAPI.getComponentNameFromFilePath(uri);
     const componentType = SalesforceAPI.getResourceTypeFromFilePath(uri);
     const content = salesforceAPI.getContentOfFileLocally(uri.fsPath);
     if (componentName && componentType) {
-      return salesforceAPI.uploadApex(componentName, componentType, content).then(metadataUpsertResult => {
+      return salesforceAPI.uploadApex(componentName, componentType, content, uri).then(metadataUpsertResult => {
         if (metadataUpsertResult.success) {
           vscode.window.showInformationMessage(
             l('SalesforceUploadSuccess', componentType, metadataUpsertResult.fullName)
@@ -165,21 +169,43 @@ function provideCommandToUploadApexToSalesforce() {
 
 function provideCommandToDownloadApexFromSalesforce() {
   vscode.commands.registerCommand('coveo.salesforce.download', (uri: vscode.Uri) => {
+    if (!uri.fsPath && vscode.window.activeTextEditor) {
+      uri = vscode.window.activeTextEditor.document.uri;
+    }
     const componentName = SalesforceAPI.getComponentNameFromFilePath(uri);
     const componentType = SalesforceAPI.getResourceTypeFromFilePath(uri);
     if (componentName && componentType) {
-      return salesforceAPI.downloadApex(componentName, componentType).then((record): Promise<DiffResult | boolean> => {
-        if (record) {
-          const localFileContent = salesforceAPI.getContentOfFileLocally(uri.fsPath);
-          if (localFileContent) {
-            return salesforceAPI.diffComponentWithLocalVersion(componentName, componentType, uri.fsPath);
+      if (componentType == ApexResourceType.APEX_COMPONENT || componentType == ApexResourceType.APEX_PAGE) {
+        return salesforceAPI.downloadApex(componentName, componentType).then((record): Promise<
+          DiffResult | boolean
+        > => {
+          if (record) {
+            const localFileContent = salesforceAPI.getContentOfFileLocally(uri.fsPath);
+            if (localFileContent) {
+              return salesforceAPI.diffComponentWithLocalVersion(componentName, componentType, uri.fsPath);
+            } else {
+              return salesforceAPI.saveFile(componentName, record.Markup, uri.fsPath);
+            }
           } else {
-            return salesforceAPI.saveFile(componentName, record.Markup, uri.fsPath);
+            return Promise.reject(l('SalesforceComponentNotFound', componentName));
           }
-        } else {
-          return Promise.reject(l('SalesforceComponentNotFound', componentName));
+        });
+      } else {
+        let toRetrieve = componentName;
+        if (componentType == ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP) {
+          const extract = SalesforceAPIStaticFolder.extractResourceInfoForFileInsizeZip(uri.fsPath);
+          if (extract) {
+            toRetrieve = extract.resourceName;
+          }
         }
-      });
+        return salesforceAPI.retrieveStaticResourceByName(toRetrieve).then(rec => {
+          if (rec) {
+            return salesforceAPI.downloadStaticResource(rec);
+          } else {
+            return Promise.reject(l('SalesforceComponentNotFound', componentName));
+          }
+        });
+      }
     } else {
       return Promise.reject(l('InvalidUriScheme', uri.toString()));
     }
@@ -193,20 +219,28 @@ function provideCommandToTakeRemoteFileFromSalesforce() {
     const localPath = SalesforceResourceContentProvider.getQueryParameterByName('localPath', uri);
 
     if (componentName && localPath && componentType) {
-      return salesforceAPI
-        .downloadApex(componentName, componentType)
-        .then(record => record.Markup)
-        .catch(() => {
-          return DiffContentStore.get(
-            SalesforceAPI.getDiffStoreScheme(componentName, componentType, SalesforceResourceLocation.DIST)
-          );
-        })
-        .catch(() => Promise.reject(l('FileNotFound')))
-        .then(content => {
+      if (componentType == ApexResourceType.APEX_COMPONENT || componentType == ApexResourceType.APEX_PAGE) {
+        return salesforceAPI
+          .downloadApex(componentName, componentType)
+          .then(record => record.Markup)
+          .then(content => {
+            return salesforceAPI
+              .saveFile(componentName, content, localPath)
+              .then(() => vscode.commands.executeCommand('workbench.action.closeActiveEditor'));
+          })
+          .catch(() => Promise.reject(l('FileNotFound')));
+      } else {
+        const content = DiffContentStore.get(
+          SalesforceAPI.getDiffStoreScheme(componentName, componentType, SalesforceResourceLocation.DIST)
+        );
+        if (content) {
           return salesforceAPI
             .saveFile(componentName, content, localPath)
             .then(() => vscode.commands.executeCommand('workbench.action.closeActiveEditor'));
-        });
+        } else {
+          return Promise.reject(l('FileNotFound'));
+        }
+      }
     } else {
       return Promise.reject(l('InvalidUriScheme', uri.toString()));
     }

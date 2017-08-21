@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { DiffContentStore } from '../diffContentStore';
-import { SalesforceResourceLocation, SalesforceAPI, ApexResourceType } from './salesforceAPI';
+import { SalesforceResourceLocation, SalesforceAPI } from './salesforceAPI';
+import { ApexResourceType } from './salesforceResourceTypes';
 const parsePath = require('parse-filepath');
 export class SalesforceResourceContentProvider {
   public static scheme = 'coveocodesalesforceresource';
@@ -27,15 +28,17 @@ export class SalesforceResourceContentProvider {
     const regex = /type-([^\/]+)/;
     const results = regex.exec(uri.path);
     if (results) {
-      if (decodeURIComponent(results[1]) == ApexResourceType.APEX_COMPONENT) {
+      const decoded = decodeURIComponent(results[1]);
+      if (decoded == ApexResourceType.APEX_COMPONENT) {
         return ApexResourceType.APEX_COMPONENT;
       }
-      if (decodeURIComponent(results[1]) == ApexResourceType.APEX_PAGE) {
+      if (decoded == ApexResourceType.APEX_PAGE) {
         return ApexResourceType.APEX_PAGE;
       }
-      if (decodeURIComponent(results[1]) == ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP) {
+      if (decoded == ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP) {
         return ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP;
       }
+      return ApexResourceType.STATIC_RESOURCE_SIMPLE;
     }
     return undefined;
   }

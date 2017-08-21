@@ -13,6 +13,12 @@ import { l } from '../strings/Strings';
 import * as zlib from 'zlib';
 import { PassThrough } from 'stream';
 import { SalesforceAPIStaticFolder, ExtractFolderResult } from './salesforceAPIStaticFolder';
+import {
+  getExtensionFromContentType,
+  getExtensionFromTypeOrPath,
+  getContentTypeFromExtension
+} from '../filetypes/filetypesConverter';
+import { ApexResourceType } from './salesforceResourceTypes';
 const fetch = require('node-fetch');
 const parsePath = require('parse-filepath');
 
@@ -43,15 +49,6 @@ export interface ISalesforceStaticResourceFromZip extends ISalesforceApexCompone
   entryName: string;
   ContentType: string;
   getData: () => Uint8Array[];
-}
-
-export enum ApexResourceType {
-  APEX_COMPONENT = 'ApexComponent',
-  APEX_PAGE = 'ApexPage',
-  STATIC_RESOURCE_SIMPLE = 'StaticResourceSimple',
-  STATIC_RESOURCE_FOLDER = 'StaticResourceFolder',
-  STATIC_RESOURCE_FOLDER_UNZIP = 'StaticResourceFolderUnzip',
-  STATIC_RESOURCE_INSIDE_UNZIP = 'StaticResourceInsideUnzip'
 }
 
 export enum DiffResult {
@@ -101,7 +98,7 @@ export class SalesforceAPI {
       if (parsedPath.dir.indexOf('_unzip') != -1) {
         return ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP;
       }
-      return parsedPath.ext;
+      return ApexResourceType.STATIC_RESOURCE_SIMPLE;
     }
     return undefined;
   }
@@ -112,20 +109,6 @@ export class SalesforceAPI {
   public constructor() {
     this.config = new SalesforceConfig();
     this.salesforceConnection = new SalesforceConnection(this.config);
-  }
-
-  public getFileExtensionFromResourceType(type: ApexResourceType, filePath: string) {
-    if (type == ApexResourceType.APEX_COMPONENT) {
-      return 'cmp';
-    }
-    if (type == ApexResourceType.APEX_PAGE) {
-      return 'page';
-    }
-    try {
-      return parsePath(filePath).extname.replace(/\./, '');
-    } catch (e) {
-      return '';
-    }
   }
 
   public saveFile(componentName: string, content: string, filePath: string): Promise<boolean> {
@@ -146,14 +129,7 @@ export class SalesforceAPI {
       let subFolder = '';
 
       if (contentType) {
-        switch (contentType.toLowerCase()) {
-          case 'text/html':
-            extension = 'html';
-            break;
-          case 'text/javascript':
-            extension = 'js';
-            break;
-        }
+        extension = getExtensionFromContentType(contentType) || '';
       }
 
       if (type == ApexResourceType.APEX_COMPONENT) {
@@ -194,7 +170,6 @@ export class SalesforceAPI {
   public getContentOfFileLocally(filePath: string): string | undefined {
     if (fs.existsSync(filePath)) {
       const contentOfLocalFile = fs.readFileSync(filePath).toString();
-      // TODO detect ressource type
       const componentName = SalesforceAPI.getComponentNameFromFilePath(vscode.Uri.parse(filePath));
       const componentType = SalesforceAPI.getResourceTypeFromFilePath(vscode.Uri.parse(filePath));
       if (componentName && componentType) {
@@ -345,7 +320,26 @@ export class SalesforceAPI {
     });
   }
 
-  public retrieveStaticResource(): Promise<ISalesforceStaticResourceRecord | null> {
+  public retrieveStaticResourceByName(componentName: string): Promise<ISalesforceStaticResourceRecord | null> {
+    return this.salesforceConnection.login().then((connection: jsforce.Connection) => {
+      return vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Window,
+          title: l('SalesforceConnection')
+        },
+        progress => {
+          progress.report({ message: l('SalesforceConnection') });
+          return connection
+            .sobject('StaticResource')
+            .find({ name: componentName })
+            .execute({ autoFetch: true })
+            .then((records: ISalesforceStaticResourceRecord[]) => _.first(records));
+        }
+      );
+    });
+  }
+
+  public retrieveStaticResource(condition = {}): Promise<ISalesforceStaticResourceRecord | null> {
     return this.salesforceConnection.login().then((connection: jsforceextension.ConnectionExtends) => {
       return vscode.window.withProgress(
         {
@@ -356,7 +350,7 @@ export class SalesforceAPI {
           progress.report({ message: l('SalesforceListingApex') });
           return connection
             .sobject('StaticResource')
-            .find({})
+            .find(condition)
             .execute({ autoFetch: true })
             .then((records: ISalesforceStaticResourceRecord[]) => {
               progress.report({ message: l('SalesforceChooseList') });
@@ -414,7 +408,15 @@ export class SalesforceAPI {
                     SalesforceResourceLocation.DIST,
                     content
                   );
-                  this.diffComponentWithLocalVersion(resourceRecord.Name, ApexResourceType.STATIC_RESOURCE_SIMPLE)
+                  this.diffComponentWithLocalVersion(
+                    resourceRecord.Name,
+                    ApexResourceType.STATIC_RESOURCE_SIMPLE,
+                    this.getStandardPathOfFileLocally(
+                      resourceRecord.Name,
+                      ApexResourceType.STATIC_RESOURCE_SIMPLE,
+                      resourceRecord.ContentType
+                    )
+                  )
                     .then(outcome => resolve(outcome))
                     .catch(err => reject(err));
                 });
@@ -462,7 +464,8 @@ export class SalesforceAPI {
   public uploadApex(
     componentName: string,
     type: ApexResourceType,
-    content: any
+    content: any,
+    filePath: vscode.Uri
   ): Promise<jsforceextension.IMedataUpsertResult> {
     return <Promise<jsforceextension.IMedataUpsertResult>>vscode.window.withProgress(
       {
@@ -472,13 +475,31 @@ export class SalesforceAPI {
       progress => {
         return this.salesforceConnection.login().then((connection: jsforceextension.ConnectionExtends) => {
           progress.report({ message: l('SalesforceUploadProgress') });
-
-          return connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
-            apiVersion: 25,
-            fullName: componentName,
-            label: componentName,
-            content: new Buffer(content).toString('base64')
-          });
+          if (type == ApexResourceType.STATIC_RESOURCE_SIMPLE) {
+            const contentType = getContentTypeFromExtension(getExtensionFromTypeOrPath(type, filePath.fsPath));
+            return connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
+              fullName: componentName,
+              contentType,
+              content: new Buffer(content).toString('base64'),
+              cacheControl: 'Public'
+            });
+          } else if (type == ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP) {
+            const contentType = 'application/zip';
+            return SalesforceAPIStaticFolder.zip(filePath.fsPath).then(({ buffer, resourceName }) => {
+              return connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
+                fullName: resourceName,
+                contentType,
+                content: buffer.toString('base64'),
+                cacheControl: 'Public'
+              });
+            });
+          } else {
+            return connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
+              fullName: componentName,
+              label: componentName,
+              content: new Buffer(content).toString('base64')
+            });
+          }
         });
       }
     );
@@ -509,10 +530,9 @@ export class SalesforceAPI {
       )}/key-${encodeURIComponent(componentName.replace(/[\/\.]/g, ''))}/type-${type.replace(
         /[\/\.]/g,
         ''
-      )}/preview.${this.getFileExtensionFromResourceType(
-        type,
+      )}/preview.${getExtensionFromTypeOrPath(type, filePath)}?tstamp=${Date.now()}&localPath=${encodeURIComponent(
         filePath
-      )}?tstamp=${Date.now()}&localPath=${encodeURIComponent(filePath)}`
+      )}`
     );
   }
 
@@ -523,6 +543,12 @@ export class SalesforceAPI {
     }
     if (type == ApexResourceType.APEX_PAGE) {
       metadataApiName = 'ApexPage';
+    }
+    if (type == ApexResourceType.STATIC_RESOURCE_SIMPLE) {
+      metadataApiName = 'StaticResource';
+    }
+    if (type == ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP) {
+      metadataApiName = 'StaticResource';
     }
     return metadataApiName;
   }

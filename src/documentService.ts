@@ -15,6 +15,7 @@ export interface IScanOfAttributeValue {
 export function formatDocument(document: vscode.TextDocument, options: vscode.FormattingOptions) {
   const transformedDoc = _transformTextDocumentApi(document);
   const range = new vscode.Range(document.positionAt(0), document.positionAt(document.getText().length));
+
   return htmlLangService.format(transformedDoc, range, options);
 }
 
@@ -27,9 +28,11 @@ export function getComponentAtPosition(
   const htmlDoc = htmlLangService.parseHTMLDocument(transformedDoc);
   const symbols = _transformSymbols(<any>htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc));
   const currentSymbol = _getCurrentSymbol(symbols, position);
+
   if (currentSymbol) {
     return referenceDocumentation.getDocumentation(currentSymbol);
   }
+
   return undefined;
 }
 
@@ -42,14 +45,17 @@ export function getResultTemplateAtPosition(
   const symbols = _transformSymbols(<any>htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc));
   const currentSymbol = _getCurrentSymbol(symbols, position);
   const allTemplates = getAllPossibleResultTemplatesSymbols(document);
+
   if (currentSymbol) {
     const currentTemplate = _.find(allTemplates, template =>
       template.location.range.isEqual(currentSymbol.location.range)
     );
+
     if (currentTemplate) {
       return currentTemplate;
     }
   }
+
   return undefined;
 }
 
@@ -62,14 +68,17 @@ export function getOptionAtPosition(
 
   if (currentComponent) {
     const currentActiveAttribute = _getScanOfActiveAttributeValue(document, position);
+
     if (currentActiveAttribute) {
       const optionThatMatch = _.find(
         currentComponent.options,
         option => `${ReferenceDocumentation.camelCaseToHyphen(option.name)}` == currentActiveAttribute.attributeName
       );
+
       return optionThatMatch;
     }
   }
+
   return undefined;
 }
 
@@ -78,8 +87,10 @@ export function getResultTemplateAttributeAtPosition(
   document: vscode.TextDocument
 ): IScanOfAttributeValue | undefined {
   const currentTemplate = getResultTemplateAtPosition(position, document);
+
   if (currentTemplate) {
     const currentActiveAttribute = _getScanOfActiveAttributeValue(document, position);
+
     if (currentActiveAttribute) {
       const attributeNameLowerCase = currentActiveAttribute.attributeName.toLowerCase();
       if (attributeNameLowerCase == 'class' || attributeNameLowerCase == 'type') {
@@ -87,6 +98,7 @@ export function getResultTemplateAttributeAtPosition(
       }
     }
   }
+
   return undefined;
 }
 
@@ -107,15 +119,19 @@ export function getAllPossibleResultTemplatesSymbols(document: vscode.TextDocume
   const transformedDoc = _transformTextDocumentApi(document);
   const htmlDoc = htmlLangService.parseHTMLDocument(transformedDoc);
   const symbols = _transformSymbols(<any>htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc));
+
   return _.filter(symbols, (symbol: vscode.SymbolInformation) => {
     let isResultTemplate = false;
+
     if (/script/.test(symbol.name)) {
       const scanOfScript = doCompleteScanOfSymbol(symbol, document);
       const hasClass = _.find(scanOfScript, scan => scan.attributeName.toLowerCase() == 'class');
+
       if (hasClass) {
         const hasCorrectCssClass = /result-template/.test(hasClass.attributeValue);
         isResultTemplate = isResultTemplate || hasCorrectCssClass;
       }
+
       const hasType = _.find(scanOfScript, scan => scan.attributeName.toLowerCase() == 'type');
       if (hasType) {
         const hasCorrectMimeTypes =
@@ -123,6 +139,7 @@ export function getAllPossibleResultTemplatesSymbols(document: vscode.TextDocume
         isResultTemplate = isResultTemplate || hasCorrectMimeTypes;
       }
     }
+
     return isResultTemplate;
   });
 }
@@ -131,6 +148,7 @@ export function getCurrentSymbol(position: vscode.Position, document: vscode.Tex
   const transformedDoc = _transformTextDocumentApi(document);
   const htmlDoc = htmlLangService.parseHTMLDocument(transformedDoc);
   const symbols = _transformSymbols(<any>htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc));
+
   return _getCurrentSymbol(<any>symbols, position);
 }
 
@@ -145,6 +163,7 @@ export function doCompleteScanOfSymbol(
   let cursorOffsetInSymbol = currentCursorOffset - currentSymbolOffset;
   const completeScanOfAttributeValues: IScanOfAttributeValue[] = [];
   let doScan: any = scanner.scan();
+
   const shouldExitScan = () => {
     return (
       scanner.getTokenType() == TokenType.EOS ||
@@ -152,15 +171,19 @@ export function doCompleteScanOfSymbol(
       scanner.getTokenType() == TokenType.StartTagSelfClose
     );
   };
+
   while (!shouldExitScan()) {
     if (scanner.getTokenType() == TokenType.AttributeName) {
       const beginningOfAttributeNameOffset = scanner.getTokenOffset();
       const attributeName = scanner.getTokenText();
       let attributeValue = '';
       let activeUnderCursor = false;
+
       doScan = scanner.scan();
+
       if (scanner.getTokenType() == TokenType.DelimiterAssign) {
         doScan = scanner.scan();
+
         if (scanner.getTokenType() == TokenType.AttributeValue) {
           attributeValue = scanner.getTokenText().replace(/['"]/g, '');
           if (
@@ -188,10 +211,13 @@ export function doCompleteScanOfSymbol(
           document.positionAt(scanner.getTokenOffset() + currentSymbolOffset + scanner.getTokenLength())
         )
       };
+
       completeScanOfAttributeValues.push(scanOfAttributeValues);
     }
+
     doScan = scanner.scan();
   }
+
   return completeScanOfAttributeValues;
 }
 
@@ -201,9 +227,11 @@ export function doCompleteScanOfCurrentSymbol(
 ): IScanOfAttributeValue[] | undefined {
   const currentSymbol = getCurrentSymbol(position, document);
   const currentCursorOffset = document.offsetAt(position);
+
   if (currentSymbol) {
     return doCompleteScanOfSymbol(currentSymbol, document, currentCursorOffset);
   }
+
   return undefined;
 }
 
@@ -211,6 +239,7 @@ export function getContentOfTemplate(template: vscode.SymbolInformation, documen
   const scanner = htmlLangService.createScanner(document.getText(_createRange(template.location.range)));
   let doScan: number = scanner.scan();
   let content = '';
+
   while (
     doScan != TokenType.EOS &&
     doScan != TokenType.EndTag &&
@@ -220,6 +249,7 @@ export function getContentOfTemplate(template: vscode.SymbolInformation, documen
     if (doScan == TokenType.Script) {
       content += scanner.getTokenText();
     }
+
     doScan = scanner.scan();
   }
 
@@ -231,6 +261,7 @@ function _transformTextDocumentApi(document: vscode.TextDocument) {
   let transform: any = {};
   Object.assign(transform, document);
   transform.uri = document.uri.toString();
+
   return transform;
 }
 

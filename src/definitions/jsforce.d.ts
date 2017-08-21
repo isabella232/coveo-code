@@ -5,7 +5,8 @@ export interface IMetadataForComponent {
   apiVersion: number;
   fullName: string;
   label: string;
-  content: string;
+  content?: string;
+  Body?: string;
 }
 
 export interface IMedataUpsertResult {
@@ -21,7 +22,7 @@ export interface IMedataUpsertResult {
 
 export class MetadataActions {
   public update(resource: string, metadata: IMetadataForComponent, callback?: () => any): Promise<any>;
-  public upsert(resource: string, metadata: IMetadataForComponent, callback?: () => any): Promise<IMedataUpsertResult>;
+  public upsert(resource: string, metadata: any, callback?: () => any): Promise<IMedataUpsertResult>;
   public read(resource: string, names: string[]): Promise<any>;
 }
 

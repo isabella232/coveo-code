@@ -23,7 +23,7 @@ export class SalesforceConnection {
     });
   }
 
-  public login(): Promise<jsforce.Connection> {
+  public async login(): Promise<jsforce.Connection> {
     if (SalesforceConnection.validConnection) {
       return Promise.resolve(SalesforceConnection.validConnection);
     } else {
@@ -32,17 +32,16 @@ export class SalesforceConnection {
           title: l('SalesforceConnection'),
           location: vscode.ProgressLocation.Window
         },
-        (progress): Promise<jsforce.Connection> => {
+        async (progress): Promise<jsforce.Connection> => {
           if (this.config.doValidation()) {
             const username = this.config.getUsername();
             const password = this.config.getPassword();
             const securityToken = this.config.getSecurityToken();
             if (username && password) {
               progress.report({ message: l('SaleforceConnecting') });
-              return this.connection.login(username, password + securityToken).then(userInfo => {
-                SalesforceConnection.validConnection = this.connection;
-                return SalesforceConnection.validConnection;
-              });
+              await this.connection.login(username, password + securityToken);
+              SalesforceConnection.validConnection = this.connection;
+              return SalesforceConnection.validConnection;
             } else {
               return Promise.reject(l('SalesforceInvalidLoginConfig'));
             }

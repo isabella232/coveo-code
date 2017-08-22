@@ -1,14 +1,16 @@
 import * as vscode from 'vscode';
 import * as _ from 'lodash';
+import * as cheerio from 'cheerio';
 import { validMimeTypesHTML, validMimeTypesUnderscore, validMimeTypes } from '../validResultTemplatesMimeTypes';
 import { getAllPossibleResultTemplatesSymbols, doCompleteScanOfSymbol, getContentOfTemplate } from '../documentService';
-import * as cheerio from 'cheerio';
 
 export class ResultTemplatesDiagnostics {
   public provideDiagnostics(document: vscode.TextDocument): vscode.Diagnostic[] {
     let allDiagnostics: vscode.Diagnostic[] = [];
 
     const allPossibleResultTemplates = getAllPossibleResultTemplatesSymbols(document);
+    allDiagnostics = allDiagnostics.concat(this.diagnoseConditions(allPossibleResultTemplates, document));
+
     _.each(allPossibleResultTemplates, template => {
       allDiagnostics = allDiagnostics.concat(this.diagnoseMissingClass(template, document));
       allDiagnostics = allDiagnostics.concat(this.diagnoseMissingType(template, document));

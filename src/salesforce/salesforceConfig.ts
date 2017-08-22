@@ -4,6 +4,7 @@ import { l } from '../strings/Strings';
 export class SalesforceConfig {
   private orgConfig: vscode.WorkspaceConfiguration;
   private localConfig: vscode.WorkspaceConfiguration;
+
   constructor() {
     const setConfig = () => {
       this.orgConfig = vscode.workspace.getConfiguration('coveocode.salesforce.organization');
@@ -12,6 +13,11 @@ export class SalesforceConfig {
     setConfig();
     vscode.workspace.onDidChangeConfiguration(() => setConfig());
   }
+
+  public configPartiallyExist(): boolean {
+    return this.getUsername() != undefined || this.getPassword() != undefined || this.getSecurityToken() != undefined;
+  }
+
   public doValidation(silent = true): boolean {
     let isValid = true;
     const showWarningMessage = (section: string) => {
@@ -36,6 +42,9 @@ export class SalesforceConfig {
         isValid = false;
         showWarningMessage('securityToken');
       }
+    }
+    if (!isValid && !silent) {
+      vscode.window.showWarningMessage(l('MissingConfig'));
     }
     return isValid;
   }

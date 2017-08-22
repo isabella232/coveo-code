@@ -88,25 +88,27 @@ export class SalesforceStaticFolder {
           const parsedPath = parsePath(standardPath);
           mkdirp.sync(parsedPath.dir);
 
-          res.body.pipe(fs.createWriteStream(standardPath)).on('finish', () => {
+          res.body.pipe(fs.createWriteStream(standardPath)).on('finish', async () => {
             if (standardPathUnzip) {
               const zip = <IAdmZip>new AdmZip(standardPath);
 
               if (!fs.existsSync(standardPathUnzip)) {
-                this.extractNewFolder(zip, standardPathUnzip).then(() => {
-                  const allEntries = zip.getEntries();
-                  allEntries.forEach(entry => {
-                    this.saveContentInDiffStore(entry, standardPathUnzip);
-                  });
+                await this.extractNewFolder(zip, standardPathUnzip);
 
-                  resolve(ExtractFolderResult.NEW_FOLDER);
+                const allEntries = zip.getEntries();
+                allEntries.forEach(entry => {
+                  this.saveContentInDiffStore(entry, standardPathUnzip);
                 });
+
+                resolve(ExtractFolderResult.NEW_FOLDER);
               } else {
                 const allEntries = zip.getEntries();
                 allEntries.map(entry => {
                   return this.extractSingleFile(entry, standardPathUnzip);
                 });
-                Promise.all(allEntries).then(() => resolve(ExtractFolderResult.FOLDER_MERGE));
+
+                await Promise.all(allEntries);
+                resolve(ExtractFolderResult.FOLDER_MERGE);
               }
             }
           });

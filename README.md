@@ -11,7 +11,7 @@ To connect to your Salesforce organization, you need provide your username, pass
 - [VScode documentation](https://code.visualstudio.com/docs/getstarted/settings) for information about your workspace settings
 - [Salesforce documentation](https://help.salesforce.com/articleView?id=user_security_token.htm&type=0&language=en_US&release=208.14) for information on how to reset and obtain your security token
 
-#### Available configuration option for salesforce
+#### Available configuration option for Salesforce
 
 - `coveocode.salesforce.organization.username`
 

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { ReferenceDocumentation, IDocumentation } from './referenceDocumentation';
 import * as _ from 'lodash';
-import { getLanguageService, LanguageService, Scanner, TokenType } from 'vscode-html-languageservice';
+import { getLanguageService, LanguageService, TokenType } from 'vscode-html-languageservice';
 import { validMimeTypes } from './validResultTemplatesMimeTypes';
 const htmlLangService: LanguageService = getLanguageService();
 

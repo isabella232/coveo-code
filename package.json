@@ -1,8 +1,8 @@
 {
     "name": "coveo-code",
     "displayName": "Coveo Code",
-    "description": "Developer support for Coveo Search UI",
-    "version": "0.0.1",
+    "description": "Developer support for Coveo",
+    "version": "0.0.2",
     "publisher": "Coveo",
     "engines": {
         "vscode": "^1.12.0"
@@ -73,16 +73,16 @@
                 }
             },
             {
-                "command": "coveo.salesforce.upload",
-                "title": "Salesforce: upload",
+                "command": "coveo.upload",
+                "title": "Coveo : Upload the resource",
                 "icon": {
                     "dark": "./media/cloud-upload-dark.svg",
                     "light": "./media/cloud-upload-light.svg"
                 }
             },
             {
-                "command": "coveo.salesforce.download",
-                "title": "Salesforce: download",
+                "command": "coveo.download",
+                "title": "Coveo : Download the resource",
                 "icon": {
                     "dark": "./media/cloud-download-dark.svg",
                     "light": "./media/cloud-download-light.svg"
@@ -103,51 +103,51 @@
                 "when": "editorLangId == visualforce && editorTextFocus"
             },
             {
-                "command": "coveo.salesforce.upload",
-                "key": "ctrl+u ctrl+u",
-                "mac": "ctrl+u ctrl+u",
+                "command": "coveo.upload",
+                "key": "ctrl+u",
+                "mac": "ctrl+u",
                 "when": "editorLangId == html && editorTextFocus"
             },
             {
-                "command": "coveo.salesforce.upload",
-                "key": "ctrl+u ctrl+u",
-                "mac": "ctrl+u ctrl+u",
+                "command": "coveo.upload",
+                "key": "ctrl+u",
+                "mac": "ctrl+u",
                 "when": "editorLangId == css && editorTextFocus"
             },
             {
-                "command": "coveo.salesforce.upload",
-                "key": "ctrl+u ctrl+u",
-                "mac": "ctrl+u ctrl+u",
+                "command": "coveo.upload",
+                "key": "ctrl+u",
+                "mac": "ctrl+u",
                 "when": "editorLangId == javascript && editorTextFocus"
             },
             {
-                "command": "coveo.salesforce.upload",
-                "key": "ctrl+u ctrl+u",
-                "mac": "ctrl+u ctrl+u",
+                "command": "coveo.upload",
+                "key": "ctrl+u",
+                "mac": "ctrl+u",
                 "when": "editorLangId == visualforce && editorTextFocus"
             },
             {
-                "command": "coveo.salesforce.download",
-                "key": "ctrl+d ctrl+d",
-                "mac": "ctrl+d ctrl+d",
+                "command": "coveo.download",
+                "key": "ctrl+d",
+                "mac": "ctrl+d",
                 "when": "editorLangId == html && editorTextFocus"
             },
             {
-                "command": "coveo.salesforce.download",
-                "key": "ctrl+d ctrl+d",
-                "mac": "ctrl+d ctrl+d",
+                "command": "coveo.download",
+                "key": "ctrl+d",
+                "mac": "ctrl+d",
                 "when": "editorLangId == css && editorTextFocus"
             },
             {
-                "command": "coveo.salesforce.download",
-                "key": "ctrl+d ctrl+d",
-                "mac": "ctrl+d ctrl+d",
+                "command": "coveo.download",
+                "key": "ctrl+d",
+                "mac": "ctrl+d",
                 "when": "editorLangId == javascript && editorTextFocus"
             },
             {
-                "command": "coveo.salesforce.download",
-                "key": "ctrl+d ctrl+d",
-                "mac": "ctrl+d ctrl+d",
+                "command": "coveo.download",
+                "key": "ctrl+d",
+                "mac": "ctrl+d",
                 "when": "editorLangId == visualforce && editorTextFocus"
             }
         ],
@@ -196,42 +196,42 @@
                     "when": "editorLangId == html && textCompareEditorVisible"
                 },
                 {
-                    "command": "coveo.salesforce.upload",
+                    "command": "coveo.upload",
                     "when": "editorLangId == visualforce",
                     "group": "navigation"
                 },
                 {
-                    "command": "coveo.salesforce.upload",
+                    "command": "coveo.upload",
                     "when": "editorLangId == html",
                     "group": "navigation"
                 },
                 {
-                    "command": "coveo.salesforce.upload",
+                    "command": "coveo.upload",
                     "when": "editorLangId == css",
                     "group": "navigation"
                 },
                 {
-                    "command": "coveo.salesforce.upload",
+                    "command": "coveo.upload",
                     "when": "editorLangId == javascript",
                     "group": "navigation"
                 },
                 {
-                    "command": "coveo.salesforce.download",
+                    "command": "coveo.download",
                     "when": "editorLangId == visualforce",
                     "group": "navigation"
                 },
                 {
-                    "command": "coveo.salesforce.download",
+                    "command": "coveo.download",
                     "when": "editorLangId == html",
                     "group": "navigation"
                 },
                 {
-                    "command": "coveo.salesforce.download",
+                    "command": "coveo.download",
                     "when": "editorLangId == css",
                     "group": "navigation"
                 },
                 {
-                    "command": "coveo.salesforce.download",
+                    "command": "coveo.download",
                     "when": "editorLangId == javascript",
                     "group": "navigation"
                 }
@@ -278,42 +278,42 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "coveo.salesforce.upload",
+                    "command": "coveo.upload",
                     "when": "editorLangId == visualforce && !textCompareEditorVisible",
                     "group": "navigation"
                 },
                 {
-                    "command": "coveo.salesforce.upload",
+                    "command": "coveo.upload",
                     "when": "editorLangId == html && !textCompareEditorVisible",
                     "group": "navigation"
                 },
                 {
-                    "command": "coveo.salesforce.upload",
+                    "command": "coveo.upload",
                     "when": "editorLangId == javascript && !textCompareEditorVisible",
                     "group": "navigation"
                 },
                 {
-                    "command": "coveo.salesforce.upload",
+                    "command": "coveo.upload",
                     "when": "editorLangId == css && !textCompareEditorVisible",
                     "group": "navigation"
                 },
                 {
-                    "command": "coveo.salesforce.download",
+                    "command": "coveo.download",
                     "when": "editorLangId == visualforce && !textCompareEditorVisible",
                     "group": "navigation"
                 },
                 {
-                    "command": "coveo.salesforce.download",
+                    "command": "coveo.download",
                     "when": "editorLangId == html && !textCompareEditorVisible",
                     "group": "navigation"
                 },
                 {
-                    "command": "coveo.salesforce.download",
+                    "command": "coveo.download",
                     "when": "editorLangId == javascript && !textCompareEditorVisible",
                     "group": "navigation"
                 },
                 {
-                    "command": "coveo.salesforce.download",
+                    "command": "coveo.download",
                     "when": "editorLangId == css && !textCompareEditorVisible",
                     "group": "navigation"
                 }
@@ -332,9 +332,9 @@
     },
     "main": "./out/src/extension",
     "scripts": {
-        "build": "npm run prettier && npm run tslint && npm run docstore && tsc -p ./",
-        "vscode:prepublish": "tsc -p ./",
-        "compile": "tsc -watch -p ./",
+        "build": "npm run prettier && npm run tslint && npm run docstore && ./node_modules/typescript/bin/tsc -p ./",
+        "vscode:prepublish": "./node_modules/typescript/bin/tsc -p ./",
+        "compile": "node ./node_modules/typescript/bin/tsc -watch -p ./",
         "prettier": "prettier --single-quote --print-width 120 --write 'src/**/*.ts'",
         "tslint": "tslint -c tslint.json src/**/*.ts",
         "postinstall": "node ./node_modules/vscode/bin/install",
@@ -344,9 +344,8 @@
         "@types/cheerio": "^0.22.2",
         "@types/html-to-text": "^1.4.30",
         "@types/jsforce": "^1.8.2",
-        "@types/lodash": "^4.14.68",
+        "@types/lodash": "^4.14.74",
         "@types/mocha": "^2.2.32",
-        "@types/node": "^6.0.40",
         "@types/node-fetch": "^1.6.7",
         "coveo-search-ui": "^2.2900.14",
         "mocha": "^2.3.3",
@@ -358,7 +357,6 @@
     "dependencies": {
         "adm-zip": "^0.4.7",
         "cheerio": "^1.0.0-rc.2",
-        "extract-zip": "^1.6.5",
         "html-to-text": "^3.3.0",
         "i18n-2": "^0.7.0",
         "jsforce": "^1.8.0",
@@ -366,7 +364,6 @@
         "mkdirp": "^0.5.1",
         "node-fetch": "^1.7.1",
         "parse-filepath": "^1.0.1",
-        "unzip": "^0.1.11",
         "vscode-html-languageservice": "^2.0.5",
         "walk": "^2.3.9",
         "write": "^1.0.3"

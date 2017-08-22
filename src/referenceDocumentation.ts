@@ -45,15 +45,4 @@ export class ReferenceDocumentation {
       return undefined;
     }
   }
-
-  private getFromTree(name: string): IDocumentation | undefined {
-    if (ReferenceDocumentation.documentations[name] != null) {
-      return ReferenceDocumentation.documentations[name];
-    }
-    const withoutCoveo = name.replace('Coveo', '');
-    if (ReferenceDocumentation.documentations[withoutCoveo] != null) {
-      return ReferenceDocumentation.documentations[withoutCoveo];
-    }
-    return undefined;
-  }
 }

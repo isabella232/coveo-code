@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
-import { IDocumentation, ReferenceDocumentation } from '../referenceDocumentation';
-import * as htmlToText from 'html-to-text';
+import { IDocumentation } from '../referenceDocumentation';
 import * as _ from 'lodash';
 import { CompletionItemForOptions } from './completionItemForOptions';
 import { CompletionItemForOptionsWithExamples } from './completionItemForOptionsWithExamples';

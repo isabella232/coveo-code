@@ -159,6 +159,7 @@ export class OptionsDiagnostics {
             if (diagnosisOfField) {
               allDiagnostics.push(diagnosisOfField);
             }
+            break;
           default:
             break;
         }

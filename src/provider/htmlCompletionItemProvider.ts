@@ -4,15 +4,14 @@ import * as _ from 'lodash';
 import { ReferenceDocumentation, IDocumentation } from '../referenceDocumentation';
 import {
   getComponentAtPosition,
-  getCurrentSymbol,
   getOptionAtPosition,
   doCompleteScanOfCurrentSymbol,
   getResultTemplateAtPosition,
   getResultTemplateAttributeAtPosition,
   IScanOfAttributeValue
 } from '../documentService';
-import { ComponentOptionValues } from '../completionItems/ComponentOptionValues';
-import { ComponentOption } from '../completionItems/ComponentOption';
+import { ComponentOptionValues } from '../completionItems/componentOptionValues';
+import { ComponentOption } from '../completionItems/componentOption';
 import { ResultTemplate } from '../completionItems/resultTemplate';
 
 export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider {
@@ -75,7 +74,7 @@ export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider
       .value();
   }
 
-  private provideCompletionsForComponentName(document: vscode.TextDocument, position: vscode.Position) {
+  /*private provideCompletionsForComponentName(document: vscode.TextDocument, position: vscode.Position) {
     const completions: vscode.CompletionItem[] = [];
     const completeScan = doCompleteScanOfCurrentSymbol(document, position);
     const classNameIsBeingCompleted = _.filter(
@@ -87,13 +86,9 @@ export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider
       // Currently, the documentation also contains interface or generic classes which are not valid Coveo components
     }
     return completions;
-  }
+  }*/
 
   private provideCompletionsForResultTemplate() {
     return new ResultTemplate().getCompletionsForAttributes();
-  }
-
-  private provideCompletionsForComponentNames() {
-    return;
   }
 }

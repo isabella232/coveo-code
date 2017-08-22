@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import { DiffContentStore } from '../diffContentStore';
 import { SalesforceResourceLocation, SalesforceAPI } from './salesforceAPI';
 import { ApexResourceType } from './salesforceResourceTypes';
-const parsePath = require('parse-filepath');
 export class SalesforceResourceContentProvider {
   public static scheme = 'coveocodesalesforceresource';
 

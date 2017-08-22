@@ -38,7 +38,7 @@ export class SalesforceLocalFile {
   }
 
   public static getContentOfFileLocally(filePath: string): string | undefined {
-    if (fs.existsSync(filePath)) {
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
       const contentOfLocalFile = fs.readFileSync(filePath).toString();
       const componentName = SalesforceLocalFile.getComponentNameFromFilePath(vscode.Uri.parse(filePath));
       const componentType = SalesforceLocalFile.getResourceTypeFromFilePath(vscode.Uri.parse(filePath));

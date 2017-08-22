@@ -1,15 +1,15 @@
-import { SalesforceAPI, ISalesforceApexComponentRecord, SalesforceResourceLocation } from './salesforceAPI';
-import * as zlib from 'zlib';
-import { PassThrough } from 'stream';
-const parsePath = require('parse-filepath');
-const mkdirp = require('mkdirp');
 import * as fs from 'fs';
 import * as path from 'path';
+import * as zlib from 'zlib';
+import { SalesforceAPI, ISalesforceApexComponentRecord, SalesforceResourceLocation } from './salesforceAPI';
+import { PassThrough } from 'stream';
 import { ApexResourceType } from './salesforceResourceTypes';
 import { l } from '../strings/Strings';
 import { SalesforceLocalFile } from './salesforceLocalFile';
 const AdmZip = require('adm-zip');
-const walk = require('walk');
+const archiver = require('archiver');
+const parsePath = require('parse-filepath');
+const mkdirp = require('mkdirp');
 
 interface IAdmZip {
   extractAllTo: (path: string, overwrite: boolean) => Promise<boolean>;
@@ -35,18 +35,22 @@ export class SalesforceStaticFolder {
 
     if (extractedInfo) {
       return new Promise((resolve, reject) => {
-        const zip = new AdmZip();
-        const walker = walk.walk(extractedInfo.folderToZip);
-
-        walker.on('file', (root: string, fileStats: any, next: () => void) => {
-          zip.addLocalFile(path.join(root, fileStats.name));
-          next();
+        const writeToDisk = fs.createWriteStream(extractedInfo.zipToWrite + '.zip');
+        const archive = archiver('zip');
+        archive.on('error', (err: any) => {
+          reject(err);
         });
 
-        walker.on('end', () => {
-          zip.writeZip(extractedInfo.zipToWrite + '.zip');
-          resolve({ buffer: zip.toBuffer(), resourceName: extractedInfo.resourceName });
+        writeToDisk.on('close', () => {
+          resolve({
+            buffer: fs.readFileSync(extractedInfo.zipToWrite + '.zip'),
+            resourceName: extractedInfo.resourceName
+          });
         });
+
+        archive.pipe(writeToDisk);
+        archive.directory(extractedInfo.folderToZip, '/');
+        archive.finalize();
       });
     } else {
       return Promise.reject(l('CouldNotExtractLocalPath', fileInsideFolder));

@@ -1,6 +1,6 @@
-import { SalesforceConfig } from './salesforceConfig';
 import * as jsforce from 'jsforce';
 import * as vscode from 'vscode';
+import { SalesforceConfig } from './salesforceConfig';
 import { l } from '../strings/Strings';
 
 export class SalesforceConnection {

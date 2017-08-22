@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { IDocumentation } from '../referenceDocumentation';
 import * as _ from 'lodash';
+import { IDocumentation } from '../referenceDocumentation';
 import { CompletionItemForOptions } from './completionItemForOptions';
 import { CompletionItemForOptionsWithExamples } from './completionItemForOptionsWithExamples';
 

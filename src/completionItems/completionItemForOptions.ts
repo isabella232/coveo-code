@@ -1,6 +1,6 @@
+import * as htmlToText from 'html-to-text';
 import * as vscode from 'vscode';
 import { IDocumentation } from '../referenceDocumentation';
-import * as htmlToText from 'html-to-text';
 
 export class CompletionItemForOptions extends vscode.CompletionItem {
   constructor(public possibleValues: string[], public optionDocumentation: IDocumentation) {

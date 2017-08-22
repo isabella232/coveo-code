@@ -356,6 +356,7 @@
     },
     "dependencies": {
         "adm-zip": "^0.4.7",
+        "archiver": "^2.0.0",
         "cheerio": "^1.0.0-rc.2",
         "html-to-text": "^3.3.0",
         "i18n-2": "^0.7.0",
@@ -365,7 +366,6 @@
         "node-fetch": "^1.7.1",
         "parse-filepath": "^1.0.1",
         "vscode-html-languageservice": "^2.0.5",
-        "walk": "^2.3.9",
         "write": "^1.0.3"
     }
 }

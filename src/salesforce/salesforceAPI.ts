@@ -1,14 +1,14 @@
-import { SalesforceConnection } from './salesforceConnection';
+import * as vscode from 'vscode';
 import * as jsforce from 'jsforce';
 import * as _ from 'lodash';
+import * as zlib from 'zlib';
+import * as jsforceextension from '../definitions/jsforce';
 import { SalesforceConfig } from './salesforceConfig';
 import { SalesforceResourceContentProvider } from './salesforceResourceContentProvider';
-import * as vscode from 'vscode';
 import { DiffContentStore } from '../diffContentStore';
-import * as jsforceextension from '../definitions/jsforce';
 import { l } from '../strings/Strings';
-import * as zlib from 'zlib';
 import { PassThrough } from 'stream';
+import { SalesforceConnection } from './salesforceConnection';
 import { SalesforceStaticFolder, ExtractFolderResult } from './salesforceStaticFolder';
 import { getExtensionFromTypeOrPath, getContentTypeFromExtension } from '../filetypes/filetypesConverter';
 import { ApexResourceType } from './salesforceResourceTypes';

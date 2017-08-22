@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
 import * as _ from 'lodash';
-import { ApexResourceType } from './salesforceResourceTypes';
 import * as fs from 'fs';
+import * as path from 'path';
+import * as write from 'write';
+import { ApexResourceType } from './salesforceResourceTypes';
 import { SalesforceResourceLocation, SalesforceAPI } from './salesforceAPI';
 import { getExtensionFromContentType } from '../filetypes/filetypesConverter';
-import * as path from 'path';
 import { SalesforceConfig } from './salesforceConfig';
-import * as write from 'write';
 const parsePath = require('parse-filepath');
 
 export class SalesforceLocalFile {

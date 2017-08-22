@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { IDocumentation } from '../referenceDocumentation';
 import * as htmlToText from 'html-to-text';
+import { IDocumentation } from '../referenceDocumentation';
 
 export class ComponentName extends vscode.CompletionItem {
   constructor(public info: IDocumentation) {

@@ -2,7 +2,7 @@
     "name": "coveo-code",
     "displayName": "Coveo Code",
     "description": "Developer support for Coveo",
-    "version": "0.0.2",
+    "version": "0.0.1",
     "publisher": "Coveo",
     "engines": {
         "vscode": "^1.12.0"
@@ -17,13 +17,6 @@
         "onLanguage:javascript"
     ],
     "contributes": {
-        "grammars": [
-            {
-                "language": "visualforce",
-                "scopeName": "text.html.basic",
-                "path": "./syntaxes/visualforce.tmLanguage"
-            }
-        ],
         "languages": [
             {
                 "id": "visualforce",
@@ -42,23 +35,39 @@
         "commands": [
             {
                 "command": "coveo.showDocumentation",
-                "title": "Documentation for Coveo Components"
+                "title": "Coveo: Documentation for current component"
+            },
+            {
+                "command": "coveo.generateProject",
+                "title": "Coveo: Generate project from scratch"
             },
             {
                 "command": "coveo.salesforce.retrieveApexComponent",
-                "title": "Retrieve a Visualforce Component from Salesforce"
+                "title": "Coveo: Retrieve a Visualforce Component from Salesforce",
+                "icon": {
+                    "dark": "./media/cloud-download-dark.svg",
+                    "light": "./media/cloud-download-light.svg"
+                }
             },
             {
                 "command": "coveo.salesforce.retrieveApexPage",
-                "title": "Retrieve a Visualforce Page from Salesforce"
+                "title": "Coveo: Retrieve a Visualforce Page from Salesforce",
+                "icon": {
+                    "dark": "./media/cloud-download-dark.svg",
+                    "light": "./media/cloud-download-light.svg"
+                }
             },
             {
                 "command": "coveo.salesforce.retrieveStaticResource",
-                "title": "Retrieve a Static Resource from Salesforce"
+                "title": "Coveo: Retrieve a Static Resource from Salesforce",
+                "icon": {
+                    "dark": "./media/cloud-download-dark.svg",
+                    "light": "./media/cloud-download-light.svg"
+                }
             },
             {
                 "command": "coveo.takeLocal",
-                "title": "Take local version",
+                "title": "Coveo: Take local version",
                 "icon": {
                     "light": "./media/take-local-light.svg",
                     "dark": "./media/take-local-dark.svg"
@@ -66,7 +75,7 @@
             },
             {
                 "command": "coveo.takeRemote",
-                "title": "Take remote version",
+                "title": "Coveo: Take remote version",
                 "icon": {
                     "light": "./media/take-remote-light.svg",
                     "dark": "./media/take-remote-dark.svg"
@@ -74,7 +83,7 @@
             },
             {
                 "command": "coveo.upload",
-                "title": "Coveo : Upload the resource",
+                "title": "Coveo: Upload the resource",
                 "icon": {
                     "dark": "./media/cloud-upload-dark.svg",
                     "light": "./media/cloud-upload-light.svg"
@@ -82,7 +91,7 @@
             },
             {
                 "command": "coveo.download",
-                "title": "Coveo : Download the resource",
+                "title": "Coveo: Download the resource",
                 "icon": {
                     "dark": "./media/cloud-download-dark.svg",
                     "light": "./media/cloud-download-light.svg"
@@ -104,50 +113,50 @@
             },
             {
                 "command": "coveo.upload",
-                "key": "ctrl+u",
-                "mac": "ctrl+u",
+                "key": "ctrl+u ctrl+u",
+                "mac": "ctrl+u ctrl+u",
                 "when": "editorLangId == html && editorTextFocus"
             },
             {
                 "command": "coveo.upload",
-                "key": "ctrl+u",
-                "mac": "ctrl+u",
+                "key": "ctrl+u ctrl+u",
+                "mac": "ctrl+u ctrl+u",
                 "when": "editorLangId == css && editorTextFocus"
             },
             {
                 "command": "coveo.upload",
-                "key": "ctrl+u",
-                "mac": "ctrl+u",
+                "key": "ctrl+u ctrl+u",
+                "mac": "ctrl+u ctrl+u",
                 "when": "editorLangId == javascript && editorTextFocus"
             },
             {
                 "command": "coveo.upload",
-                "key": "ctrl+u",
-                "mac": "ctrl+u",
+                "key": "ctrl+u ctrl+u",
+                "mac": "ctrl+u ctrl+u",
                 "when": "editorLangId == visualforce && editorTextFocus"
             },
             {
                 "command": "coveo.download",
-                "key": "ctrl+d",
-                "mac": "ctrl+d",
+                "key": "ctrl+d ctrl+d",
+                "mac": "ctrl+d ctrl+d",
                 "when": "editorLangId == html && editorTextFocus"
             },
             {
                 "command": "coveo.download",
-                "key": "ctrl+d",
-                "mac": "ctrl+d",
+                "key": "ctrl+d ctrl+d",
+                "mac": "ctrl+d ctrl+d",
                 "when": "editorLangId == css && editorTextFocus"
             },
             {
                 "command": "coveo.download",
-                "key": "ctrl+d",
-                "mac": "ctrl+d",
+                "key": "ctrl+d ctrl+d",
+                "mac": "ctrl+d ctrl+d",
                 "when": "editorLangId == javascript && editorTextFocus"
             },
             {
                 "command": "coveo.download",
-                "key": "ctrl+d",
-                "mac": "ctrl+d",
+                "key": "ctrl+d ctrl+d",
+                "mac": "ctrl+d ctrl+d",
                 "when": "editorLangId == visualforce && editorTextFocus"
             }
         ],
@@ -366,6 +375,7 @@
         "node-fetch": "^1.7.1",
         "parse-filepath": "^1.0.1",
         "vscode-html-languageservice": "^2.0.5",
-        "write": "^1.0.3"
+        "write": "^1.0.3",
+        "yeoman-generator": "^1.1.1"
     }
 }

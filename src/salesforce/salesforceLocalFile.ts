@@ -32,6 +32,16 @@ export class SalesforceLocalFile {
       if (parsedPath.dir.indexOf('_unzip') != -1) {
         return ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP;
       }
+      if (parsedPath.ext == '' && parsedPath.base.indexOf('_unzip') != -1) {
+        return ApexResourceType.STATIC_RESOURCE_FOLDER_UNZIP;
+      }
+      if (parsedPath.ext == '') {
+        const stats = fs.statSync(parsedPath.absolute);
+        if (stats.isDirectory()) {
+          return ApexResourceType.STATIC_RESOURCE_FOLDER;
+        }
+      }
+
       return ApexResourceType.STATIC_RESOURCE_SIMPLE;
     }
     return undefined;

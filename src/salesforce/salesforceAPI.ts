@@ -360,7 +360,7 @@ export class SalesforceAPI {
     filePath: vscode.Uri
   ): Promise<jsforceextension.IMedataUpsertResult> {
     const connection = (await this.salesforceConnection.login()) as jsforceextension.ConnectionExtends;
-
+    const cleanedUpName = componentName.replace(/[^a-zA-Z0-9]/g, '');
     return <Promise<jsforceextension.IMedataUpsertResult>>vscode.window.withProgress(
       {
         title: l('SalesforceConnection'),
@@ -372,12 +372,15 @@ export class SalesforceAPI {
         if (type == ApexResourceType.STATIC_RESOURCE_SIMPLE) {
           const contentType = getContentTypeFromExtension(getExtensionFromTypeOrPath(type, filePath.fsPath));
           return connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
-            fullName: componentName,
+            fullName: cleanedUpName,
             contentType,
             content: new Buffer(content).toString('base64'),
             cacheControl: 'Public'
           });
-        } else if (type == ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP) {
+        } else if (
+          type == ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP ||
+          type == ApexResourceType.STATIC_RESOURCE_FOLDER_UNZIP
+        ) {
           const contentType = 'application/zip';
           const { buffer, resourceName } = await SalesforceStaticFolder.zip(filePath.fsPath);
 
@@ -389,7 +392,7 @@ export class SalesforceAPI {
           });
         } else {
           return connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
-            fullName: componentName,
+            fullName: cleanedUpName,
             label: componentName,
             content: new Buffer(content).toString('base64')
           });
@@ -422,17 +425,19 @@ export class SalesforceAPI {
 
   private fromApexResourceTypeToMetadataAPIName(type: ApexResourceType) {
     let metadataApiName = '';
-    if (type == ApexResourceType.APEX_COMPONENT) {
-      metadataApiName = 'ApexComponent';
-    }
-    if (type == ApexResourceType.APEX_PAGE) {
-      metadataApiName = 'ApexPage';
-    }
-    if (type == ApexResourceType.STATIC_RESOURCE_SIMPLE) {
-      metadataApiName = 'StaticResource';
-    }
-    if (type == ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP) {
-      metadataApiName = 'StaticResource';
+    switch (type) {
+      case ApexResourceType.APEX_COMPONENT:
+        metadataApiName = 'ApexComponent';
+        break;
+      case ApexResourceType.APEX_PAGE:
+        metadataApiName = 'ApexPage';
+        break;
+      case ApexResourceType.STATIC_RESOURCE_SIMPLE:
+      case ApexResourceType.STATIC_RESOURCE_FOLDER_UNZIP:
+      case ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP:
+      case ApexResourceType.STATIC_RESOURCE_FOLDER:
+        metadataApiName = 'StaticResource';
+        break;
     }
     return metadataApiName;
   }

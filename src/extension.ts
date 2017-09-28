@@ -7,6 +7,7 @@ import { DiagnosticProvider } from './provider/diagnosticProvider';
 import { OnlineDocumentationProvider } from './provider/onlineDocumentationProvider';
 import { salesforceAPI, registerSalesforceExtension } from './salesforce/salesforceExtension';
 import { l } from './strings/Strings';
+// const child_process = require('child_process');
 
 const refererenceDocumentation = new ReferenceDocumentation();
 
@@ -15,6 +16,7 @@ export function activate(context: vscode.ExtensionContext) {
   provideCompletionForMarkup(context);
   provideDiagnosticsForMarkup(context);
   provideContextMenu(context);
+  provideGenerator(context);
 
   let commandsAreHandled = false;
   // Salesforce specific
@@ -39,6 +41,22 @@ const provideContextMenu = (context: vscode.ExtensionContext) => {
       contextMenuProvider.openDocumentation(currentPosition, currentDocument);
     }
   });
+  context.subscriptions.push(commandProvider);
+};
+
+const provideGenerator = (context: vscode.ExtensionContext) => {
+  const commandProvider = vscode.commands.registerCommand('coveo.generateProject', () => {
+    // vscode.commands.getCommands().then(vals => console.log(vals));
+    // console.log(vscode.workspace.asRelativePath('./node_modules'));
+    // vscode.workspace.
+    const term = vscode.window.createTerminal('Generator');
+    term.sendText('npm install -g yo');
+    term.sendText('npm install -g generator-coveo');
+    term.sendText('yo coveo');
+    term.show();
+    //term.sendText(`yo coveo`);
+  });
+
   context.subscriptions.push(commandProvider);
 };
 

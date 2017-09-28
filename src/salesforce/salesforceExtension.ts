@@ -128,15 +128,22 @@ const provideCommandToUploadApexToSalesforce = () => {
     const componentType = SalesforceLocalFile.getResourceTypeFromFilePath(uri);
     const content = SalesforceLocalFile.getContentOfFileLocally(uri.fsPath);
     if (componentName && componentType) {
-      const metadataUpsertResult = await salesforceAPI.uploadApex(componentName, componentType, content, uri);
+      const showErrorFeedback = (message: string, statusCode: string) => {
+        vscode.window.showErrorMessage(`Message: ${message}`);
+        vscode.window.showErrorMessage(`Status code: ${statusCode}`);
+      };
 
-      if (metadataUpsertResult.success) {
-        vscode.window.showInformationMessage(
-          l('SalesforceUploadSuccess', componentType, metadataUpsertResult.fullName)
-        );
-      } else {
-        vscode.window.showErrorMessage(`Message: ${metadataUpsertResult.errors.message}`);
-        vscode.window.showErrorMessage(`Status code: ${metadataUpsertResult.errors.statusCode}`);
+      try {
+        const metadataUpsertResult = await salesforceAPI.uploadApex(componentName, componentType, content, uri);
+        if (metadataUpsertResult.success) {
+          vscode.window.showInformationMessage(
+            l('SalesforceUploadSuccess', componentType, metadataUpsertResult.fullName)
+          );
+        } else {
+          showErrorFeedback(metadataUpsertResult.errors.message, metadataUpsertResult.errors.statusCode);
+        }
+      } catch (err) {
+        showErrorFeedback(err.message, err.statusCode);
       }
     } else {
       return Promise.reject(l('InvalidUriScheme', uri.toString()));

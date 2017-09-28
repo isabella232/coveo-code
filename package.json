@@ -11,10 +11,7 @@
         "Other"
     ],
     "activationEvents": [
-        "onLanguage:html",
-        "onLanguage:visualforce",
-        "onLanguage:css",
-        "onLanguage:javascript"
+        "*"
     ],
     "contributes": {
         "languages": [
@@ -39,7 +36,7 @@
             },
             {
                 "command": "coveo.generateProject",
-                "title": "Coveo: Generate project from scratch"
+                "title": "Coveo: Start the project generator"
             },
             {
                 "command": "coveo.salesforce.retrieveApexComponent",
@@ -326,6 +323,18 @@
                     "when": "editorLangId == css && !textCompareEditorVisible",
                     "group": "navigation"
                 }
+            ],
+            "explorer/context": [
+                {
+                    "command": "coveo.upload",
+                    "when": "explorerResourceIsFolder",
+                    "group": "navigation"
+                },
+                {
+                    "command": "coveo.download",
+                    "when": "explorerResourceIsFolder",
+                    "group": "navigation"
+                }
             ]
         },
         "snippets": [
@@ -375,7 +384,6 @@
         "node-fetch": "^1.7.1",
         "parse-filepath": "^1.0.1",
         "vscode-html-languageservice": "^2.0.5",
-        "write": "^1.0.3",
-        "yeoman-generator": "^1.1.1"
+        "write": "^1.0.3"
     }
 }

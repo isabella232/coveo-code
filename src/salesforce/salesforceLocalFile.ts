@@ -13,7 +13,7 @@ export class SalesforceLocalFile {
   public static getComponentNameFromFilePath(filePath: vscode.Uri): string | undefined {
     if (filePath.fsPath) {
       const parsedPath: any = parsePath(filePath.fsPath);
-      return parsedPath.name;
+      return parsedPath.name.replace('_unzip', '');
     }
     return undefined;
   }

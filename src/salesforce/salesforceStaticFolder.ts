@@ -60,6 +60,7 @@ export class SalesforceStaticFolder {
   public static extractResourceInfoForFileInsizeZip(fileInsizeZip: string) {
     const matchForFileInsideZip = fileInsizeZip.match(/(.*\/([a-zA-Z]+))_unzip\//);
     const matchForZipFolder = fileInsizeZip.match(/(.*\/([a-zA-Z]+))_unzip/);
+    const matchForFolder = fileInsizeZip.match(/(.*\/([a-zA-Z]+))/);
     if (matchForFileInsideZip) {
       return {
         folderToZip: matchForFileInsideZip[0],
@@ -71,6 +72,12 @@ export class SalesforceStaticFolder {
         folderToZip: matchForZipFolder[0],
         zipToWrite: matchForZipFolder[1],
         resourceName: matchForZipFolder[2]
+      };
+    } else if (matchForFolder) {
+      return {
+        folderToZip: matchForFolder[0],
+        zipToWrite: matchForFolder[1],
+        resourceName: matchForFolder[2]
       };
     } else {
       return null;

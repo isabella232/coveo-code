@@ -379,7 +379,8 @@ export class SalesforceAPI {
           });
         } else if (
           type == ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP ||
-          type == ApexResourceType.STATIC_RESOURCE_FOLDER_UNZIP
+          type == ApexResourceType.STATIC_RESOURCE_FOLDER_UNZIP ||
+          type == ApexResourceType.STATIC_RESOURCE_FOLDER
         ) {
           const contentType = 'application/zip';
           const { buffer, resourceName } = await SalesforceStaticFolder.zip(filePath.fsPath);

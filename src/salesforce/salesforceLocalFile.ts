@@ -80,12 +80,12 @@ export class SalesforceLocalFile {
       }
 
       if (type == ApexResourceType.APEX_COMPONENT) {
-        extension = 'cmp';
-        subFolder = 'components';
+        extension = 'component';
+        subFolder = `pages${path.sep}sfdc`;
       }
       if (type == ApexResourceType.APEX_PAGE) {
         extension = 'page';
-        subFolder = 'pages';
+        subFolder = `pages${path.sep}sfdc`;
       }
       if (type == ApexResourceType.STATIC_RESOURCE_FOLDER) {
         extension = 'zip';

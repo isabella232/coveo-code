@@ -26,6 +26,7 @@ const i18ninstance = new i18n({
       MimetypeDocumentation:
         'Specify a mimeType that determine the type of template. This mimeType create an %s template',
       SalesforceUploadSuccess: 'Resource succesfully uploaded to Salesforce as type: %s with the name: %s',
+      SalesforceDownloadSuccess: 'Resource succesfully downloaded from Salesforce as type: %s with the name: %s',
       SalesforceComponentNotFound: 'Component not found in your salesforce organization : %s',
       SalesforceConnection: 'Salesforce connection',
       SalesforceConnecting: 'Connecting to your salesforce organization...',

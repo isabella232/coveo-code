@@ -58,9 +58,9 @@ export class SalesforceStaticFolder {
   }
 
   public static extractResourceInfoForFileInsizeZip(fileInsizeZip: string) {
-    const matchForFileInsideZip = fileInsizeZip.match(/(.*\/([a-zA-Z]+))_unzip\//);
-    const matchForZipFolder = fileInsizeZip.match(/(.*\/([a-zA-Z]+))_unzip/);
-    const matchForFolder = fileInsizeZip.match(/(.*\/([a-zA-Z]+))/);
+    const matchForFileInsideZip = fileInsizeZip.match(/(.*[\/\\]([^\/\\]+))_unzip[\/\\]/);
+    const matchForZipFolder = fileInsizeZip.match(/(.*[\/\\]([^\/\\]+))_unzip/);
+    const matchForFolder = fileInsizeZip.match(/(.*[\/\\]([^\/\\]+))/);
     if (matchForFileInsideZip) {
       return {
         folderToZip: matchForFileInsideZip[0],

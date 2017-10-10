@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+const path = require('path');
 import { l } from '../strings/Strings';
 
 export class SalesforceConfig {
@@ -66,6 +67,6 @@ export class SalesforceConfig {
   }
 
   public getOutputFolder() {
-    return this.localConfig.get<string>('outputFolder') || './coveocode/salesforce';
+    return this.localConfig.get<string>('outputFolder') || `.${path.sep}`;
   }
 }

@@ -5,6 +5,18 @@ Visual Studio Code plugin for Coveo Search UI. This plugin is designed to help b
 
 ## Configuration
 
+### Project generation
+
+It is *highly* recommended that you first install a [Coveo project generator](https://github.com/coveo/generator-coveo), using [Yeoman](http://yeoman.io/).
+
+```
+npm install -g yo
+npm install -g generator-coveo
+yo coveo
+```
+
+This generator will create a working Node JS project for you, with all the boilerplate needed to start working. It will also generate a folder structure which will work nicely with this Visual Studio code plugin.
+
 ### Salesforce
 
 To connect to your Salesforce organization, you need provide your username, password and security token. You can do so using either your user preferences, or (preferred) your workspace settings. See : 
@@ -39,8 +51,7 @@ To connect to your Salesforce organization, you need provide your username, pass
   "coveocode.salesforce.organization.username" : "MANDATORY",
   "coveocode.salesforce.organization.password" : "MANDATORY",
   "coveocode.salesforce.organization.securityToken" : "MANDATORY",
-  "coveocode.salesforce.organization.loginUrl" : "OPTIONAL",
-  "coveocode.salesforce.local.outputFolder" : "OPTIONAL"
+  "coveocode.salesforce.organization.loginUrl" : "OPTIONAL"
 }
 ```
 

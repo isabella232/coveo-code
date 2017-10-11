@@ -10,7 +10,7 @@ cache:
   directories:
   - node_modules
 before_script:
-  -npm install -g vsce
+  - npm install -g vsce
 script:
 - npm run build
 - vsce package --out out/coveo-code.vsix
@@ -19,11 +19,13 @@ deploy:
     api_key:
       secure: pIz+7JfcnYwH17ouPT7tFGVSG1XoH22hFZKvTuDDn4lwNj5Xi9W07nVTgMTQyiFm5cSDLzVureJYXn9LedLU8u86E3vy/yEi4jfwVh6d/9DJ0GJY1dHwrHgZphvHaCCTQ37Qosi4y5mVtaGP9oKaNLBiBQ/VEeECgVPnisY/Oc2w4F/tjIdhmJGIj31lZn1p/GScQqJi4jYiqBcrksyprLU5bofti3rG1UTwV9SbXrjSloCLuwOldEJtidV1EzTSEabaJnjwkovO4sfig1RePBjqbQx2GJr5jUTjVav18HLm8YQv5Lf8TA944mlmFaJ6J1u2mGzoeEXZqDbG4EwX1uXlgD1m3J+AWIM+C309u0YIv7tkqT+7ebbJwI+jBZkz5/yfxZCtYXF2M7x3jGmHXmYe8IAkoZKuyZX2JRYRjjD+VMeVLIeEFc34eSm3zXSBa3enhpl5Bi++bs37z1mT1yQ4RUuCjfuEhTeGICxb2eNaaoe+ggRn62cBPn9KTa3QDGHAYhDkOjF0M/EuZN/H62Fnr2nHKr8giwfaFxtbq6UDg0+faT6P00qH/kzNuzR7cbfQ0NvapvVPwXP5zVmcZfF22UOlF9MM5z4oiZYiQpaZK4JMmhzlOrTJIrh/aw2qnwTYzBYjvGPh3py5PDRtQ1j4dJETm1z7hWeSEELDTuc=
     file: out/coveo-code.vsix
+    skip_cleanup: true
     on:
       repo: coveo/coveo-code
       tags: true
   - provider: script
     script: vsce publish -p $VSCE_TOKEN --packagePath out/coveo-code.vsix
+    skip_cleanup: true
     on:
       repo: coveo/coveo-code
       tags: true

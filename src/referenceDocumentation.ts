@@ -19,6 +19,7 @@ const documentationJSON: {
 
 export class ReferenceDocumentation {
   private static documentations: { [component: string]: IDocumentation };
+  private static documentationCache: { [symbol: string]: IDocumentation } = {};
 
   constructor() {
     if (ReferenceDocumentation.documentations == null) {
@@ -32,15 +33,28 @@ export class ReferenceDocumentation {
   }
 
   public getDocumentation(symbol: vscode.SymbolInformation): IDocumentation | undefined {
+    if (!symbol.name) {
+      return undefined;
+    }
+    // Try to hit cache which associate a symbol in the HTML document to the linked documentation node.
+    // Otherwise, try to find any documentation that match the current HTML node, and add it to the cache.
+    if (ReferenceDocumentation.documentationCache[symbol.name]) {
+      return ReferenceDocumentation.documentationCache[symbol.name];
+    }
+
     const allComponents = _.keys(ReferenceDocumentation.documentations);
+    const regex = /[a-z-A-Z]*\.([a-z-A-Z]+)/;
     const componentFound = _.find(allComponents, (component: string) => {
-      if (symbol.name) {
-        return symbol.name.indexOf(component) != -1;
+      const matches = regex.exec(symbol.name);
+      if (matches && matches[1]) {
+        return `Coveo${component}` == matches[1];
       }
       return false;
     });
+
     if (componentFound) {
-      return ReferenceDocumentation.documentations[componentFound];
+      ReferenceDocumentation.documentationCache[symbol.name] = ReferenceDocumentation.documentations[componentFound];
+      return ReferenceDocumentation.documentationCache[symbol.name];
     } else {
       return undefined;
     }

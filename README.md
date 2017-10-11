@@ -1,4 +1,4 @@
-# coveo-code
+# coveo-code [![Build Status](https://travis-ci.org/coveo/search-ui.svg?branch=master)](https://travis-ci.org/coveo/search-ui) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![TypeScript](https://badges.frapsoft.com/typescript/code/typescript.png?v=101)](https://github.com/ellerbrock/typescript-badges/) [![Version](https://vsmarketplacebadge.apphb.com/version/coveo.coveo-code.svg)](https://marketplace.visualstudio.com/items?itemName=coveo.coveo-code)
 
 Visual Studio Code plugin for Coveo Search UI. This plugin is designed to help build and deploy Coveo Search pages built using the [Coveo Search UI framework](https://github.com/coveo/search-ui)
 

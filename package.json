@@ -3,7 +3,7 @@
     "displayName": "Coveo Code",
     "description": "Developer support for Coveo",
     "version": "0.0.1",
-    "publisher": "Coveo",
+    "publisher": "coveo",
     "engines": {
         "vscode": "^1.12.0"
     },

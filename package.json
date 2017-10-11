@@ -2,7 +2,7 @@
     "name": "coveo-code",
     "displayName": "Coveo Code",
     "description": "Developer support for Coveo",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "publisher": "coveo",
     "engines": {
         "vscode": "^1.12.0"

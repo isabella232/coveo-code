@@ -1,9 +1,40 @@
 import * as vscode from 'vscode';
 import { DiffContentStore } from '../diffContentStore';
 import { SalesforceResourceLocation, SalesforceAPI } from './salesforceAPI';
-import { ApexResourceType } from './salesforceResourceTypes';
-export class SalesforceResourceContentProvider {
+import {
+  getExtensionFromTypeOrPath,
+  filetypesDefinition,
+  SalesforceResourceType
+} from '../filetypes/filetypesConverter';
+import * as _ from 'lodash';
+
+export class SalesforceResourcePreviewContentProvider {
   public static scheme = 'coveocodesalesforceresource';
+
+  public static getPreviewUri(
+    componentName: string,
+    type: SalesforceResourceType,
+    location: SalesforceResourceLocation,
+    filePath: string
+  ): vscode.Uri {
+    const matchOnSalesforceResourceType = _.find(
+      filetypesDefinition,
+      definition => definition.salesforceResourceType == type
+    );
+    const suffix =
+      matchOnSalesforceResourceType && matchOnSalesforceResourceType.suffix ? matchOnSalesforceResourceType.suffix : '';
+
+    return vscode.Uri.parse(
+      `${SalesforceResourcePreviewContentProvider.scheme}://location-${encodeURIComponent(
+        location.replace(/[\/\.]/g, '')
+      )}/key-${encodeURIComponent(componentName.replace(/[\/\.]/g, '') + suffix)}/type-${type.replace(
+        /[\/\.]/g,
+        ''
+      )}/preview.${getExtensionFromTypeOrPath(type, filePath)}?tstamp=${Date.now()}&localPath=${encodeURIComponent(
+        filePath
+      )}`
+    );
+  }
 
   public static getComponentNameFromPreviewUri(uri: vscode.Uri): string | undefined {
     const regex = /key-([^\/]+)/;
@@ -23,21 +54,12 @@ export class SalesforceResourceContentProvider {
     return undefined;
   }
 
-  public static getComponentTypeFromPreviewUri(uri: vscode.Uri): ApexResourceType | undefined {
+  public static getComponentTypeFromPreviewUri(uri: vscode.Uri): SalesforceResourceType | undefined {
     const regex = /type-([^\/]+)/;
     const results = regex.exec(uri.path);
     if (results) {
       const decoded = decodeURIComponent(results[1]);
-      if (decoded == ApexResourceType.APEX_COMPONENT) {
-        return ApexResourceType.APEX_COMPONENT;
-      }
-      if (decoded == ApexResourceType.APEX_PAGE) {
-        return ApexResourceType.APEX_PAGE;
-      }
-      if (decoded == ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP) {
-        return ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP;
-      }
-      return ApexResourceType.STATIC_RESOURCE_SIMPLE;
+      return decoded as SalesforceResourceType;
     }
     return undefined;
   }
@@ -73,9 +95,9 @@ export class SalesforceResourceContentProvider {
   }
 
   public provideTextDocumentContent(uri: vscode.Uri): string | Thenable<string> {
-    const keyValue = SalesforceResourceContentProvider.getComponentNameFromPreviewUri(uri);
-    const locationAsString = SalesforceResourceContentProvider.getLocationFromPreviewUri(uri);
-    const type = SalesforceResourceContentProvider.getComponentTypeFromPreviewUri(uri);
+    const keyValue = SalesforceResourcePreviewContentProvider.getComponentNameFromPreviewUri(uri);
+    const locationAsString = SalesforceResourcePreviewContentProvider.getLocationFromPreviewUri(uri);
+    const type = SalesforceResourcePreviewContentProvider.getComponentTypeFromPreviewUri(uri);
     let location: SalesforceResourceLocation;
     if (locationAsString && locationAsString == SalesforceResourceLocation.LOCAL) {
       location = SalesforceResourceLocation.LOCAL;

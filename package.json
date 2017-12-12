@@ -48,12 +48,16 @@
                 "title": "Coveo: Documentation for current component"
             },
             {
-                "command": "coveo.generateProject",
-                "title": "Coveo: Start the project generator"
-            },
-            {
                 "command": "coveo.salesforce.retrieveApexComponent",
                 "title": "Coveo: Retrieve a Visualforce Component from Salesforce",
+                "icon": {
+                    "dark": "./media/cloud-download-dark.svg",
+                    "light": "./media/cloud-download-light.svg"
+                }
+            },
+            {
+                "command": "coveo.salesforce.retrieveLightningComponent",
+                "title": "Coveo: Retrieve a Lightning Component from Salesforce",
                 "icon": {
                     "dark": "./media/cloud-download-dark.svg",
                     "light": "./media/cloud-download-light.svg"
@@ -199,6 +203,10 @@
                     "when": "editorLangId == html && textCompareEditorVisible"
                 },
                 {
+                    "command": "coveo.takeLocal",
+                    "when": "editorLangId == xml && textCompareEditorVisible"
+                },
+                {
                     "command": "coveo.takeRemote",
                     "when": "editorLangId == visualforce && textCompareEditorVisible"
                 },
@@ -213,6 +221,10 @@
                 {
                     "command": "coveo.takeRemote",
                     "when": "editorLangId == html && textCompareEditorVisible"
+                },
+                {
+                    "command": "coveo.takeRemote",
+                    "when": "editorLangId == xml && textCompareEditorVisible"
                 },
                 {
                     "command": "coveo.upload",

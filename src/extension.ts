@@ -5,7 +5,7 @@ import { ReferenceDocumentation } from './referenceDocumentation';
 import { HTMLCompletionItemProvider } from './provider/htmlCompletionItemProvider';
 import { DiagnosticProvider } from './provider/diagnosticProvider';
 import { OnlineDocumentationProvider } from './provider/onlineDocumentationProvider';
-import { salesforceAPI, registerSalesforceExtension } from './salesforce/salesforceExtension';
+import { registerSalesforceExtension, config as salesforceConfig } from './salesforce/salesforceExtension';
 import { l } from './strings/Strings';
 // const child_process = require('child_process');
 
@@ -20,11 +20,11 @@ export function activate(context: vscode.ExtensionContext) {
 
   let commandsAreHandled = false;
   // Salesforce specific
-  if (salesforceAPI.config.doValidation(true)) {
+  if (salesforceConfig.doValidation(true)) {
     registerSalesforceExtension(context);
     commandsAreHandled = true;
-  } else if (salesforceAPI.config.configPartiallyExist()) {
-    salesforceAPI.config.doValidation(false);
+  } else if (salesforceConfig.configPartiallyExist()) {
+    salesforceConfig.doValidation(false);
   }
 
   if (!commandsAreHandled) {

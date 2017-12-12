@@ -3,29 +3,46 @@ import * as jsforce from 'jsforce';
 import * as _ from 'lodash';
 import * as zlib from 'zlib';
 import * as jsforceextension from '../definitions/jsforce';
-import { SalesforceConfig } from './salesforceConfig';
-import { SalesforceResourceContentProvider } from './salesforceResourceContentProvider';
+import { SalesforceResourcePreviewContentProvider } from './salesforceResourcePreviewContentProvider';
 import { DiffContentStore } from '../diffContentStore';
 import { l } from '../strings/Strings';
 import { PassThrough } from 'stream';
 import { SalesforceConnection } from './salesforceConnection';
 import { SalesforceStaticFolder, ExtractFolderResult } from './salesforceStaticFolder';
-import { getExtensionFromTypeOrPath, getContentTypeFromExtension } from '../filetypes/filetypesConverter';
-import { ApexResourceType } from './salesforceResourceTypes';
-import { SalesforceLocalFile } from './salesforceLocalFile';
+import { SalesforceLocalFileManager, DiffResult } from './salesforceLocalFileManager';
 import { SalesforceStaticResource } from './salesforceStaticResource';
+import { SalesforceConfig } from './salesforceConfig';
+import { SalesforceAura } from './salesforceAuraFolder';
+import { filetypesDefinition, SalesforceResourceType } from '../filetypes/filetypesConverter';
 const fetch = require('node-fetch');
-const parsePath = require('parse-filepath');
 
-export interface ISalesforceApexComponentRecord {
-  Name: string;
-  Markup: string;
+export interface ISalesforceRecord {
+  Id: string;
+  IsDeleted: boolean;
   attributes: {
     type: string;
     url: string;
   };
-  Id: string;
+  CreatedDate: string;
+  LastModifiedDate: string;
+}
+export interface ISalesforceApexComponentRecord {
+  Name: string;
+  Markup: string;
   ContentType?: string;
+}
+
+export interface ISalesforceAuraDefinitionBundle extends ISalesforceRecord {
+  DeveloperName: string;
+  Language: string;
+  MasterLabel: string;
+  NameSpacePrefix: string;
+  Description: string;
+}
+
+export interface ISalesforceAuraDefinition extends ISalesforceRecord {
+  Source: string;
+  DefType: SalesforceResourceType;
 }
 
 export interface ISalesforceStaticResourceRecord extends ISalesforceApexComponentRecord {
@@ -38,14 +55,6 @@ export interface ISalesforceApexPageRecord {
   content: string;
 }
 
-export enum DiffResult {
-  FILE_DOES_NOT_EXIST_LOCALLY,
-  EDITOR_DIFF_OPENED,
-  NOTHING_TO_DIFF,
-  EDITOR_NOT_ABLE_TO_DIFF,
-  EDITOR_ERROR_WHILE_EXECUTING_DIFF
-}
-
 export enum SalesforceResourceLocation {
   LOCAL = 'local',
   DIST = 'dist'
@@ -54,10 +63,10 @@ export enum SalesforceResourceLocation {
 export class SalesforceAPI {
   public static getDiffStoreScheme(
     componentName: string,
-    resourceType: ApexResourceType,
+    resourceType: SalesforceResourceType,
     location: SalesforceResourceLocation
   ) {
-    return `${SalesforceResourceContentProvider.scheme}:${location}:${resourceType}:${componentName.replace(
+    return `${SalesforceResourcePreviewContentProvider.scheme}:${location}:${resourceType}:${componentName.replace(
       /[\/\.]/g,
       ''
     )}`;
@@ -65,66 +74,76 @@ export class SalesforceAPI {
 
   public static saveComponentInDiffStore(
     componentName: string,
-    type: ApexResourceType,
+    type: SalesforceResourceType,
     location: SalesforceResourceLocation,
     content: string
   ) {
     DiffContentStore.add(SalesforceAPI.getDiffStoreScheme(componentName, type, location), content);
   }
 
-  public config: SalesforceConfig;
   public salesforceConnection: SalesforceConnection;
 
-  public constructor() {
-    this.config = new SalesforceConfig();
-    this.salesforceConnection = new SalesforceConnection(this.config);
+  public constructor(public config: SalesforceConfig) {
+    this.salesforceConnection = new SalesforceConnection(config);
   }
 
-  public diffComponentWithLocalVersion(
-    componentName: string,
-    type: ApexResourceType,
-    filePath?: string
-  ): Promise<DiffResult> {
-    return new Promise((resolve, reject) => {
-      let contentOfLocalFile: string | undefined;
+  public async retrieveLightningComponent(): Promise<{ bundle: ISalesforceAuraDefinition[]; name: string } | null> {
+    const connection = await this.salesforceConnection.login();
 
-      if (!filePath) {
-        filePath = SalesforceLocalFile.getStandardPathOfFileLocally(componentName, type, this.config);
-        if (filePath) {
-          contentOfLocalFile = SalesforceLocalFile.getContentOfFileLocally(filePath);
-        }
-      } else {
-        contentOfLocalFile = SalesforceLocalFile.getContentOfFileLocally(filePath);
-      }
-      const contentOfDistFile = this.getComponentInDiffStore(componentName, type, SalesforceResourceLocation.DIST);
-      if (contentOfLocalFile) {
-        if (contentOfDistFile) {
-          if (contentOfDistFile != contentOfLocalFile) {
-            vscode.commands
-              .executeCommand(
-                'vscode.diff',
-                this.getUri(componentName, type, SalesforceResourceLocation.LOCAL, filePath ? filePath : ''),
-                this.getUri(componentName, type, SalesforceResourceLocation.DIST, filePath ? filePath : ''),
-                l('CompareLocalRemote', parsePath(filePath).base)
-              )
-              .then(
-                success => {
-                  resolve(DiffResult.EDITOR_DIFF_OPENED);
-                },
-                err => {
-                  reject(err);
-                }
+    return vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Window,
+        title: l('SalesforceConnection')
+      },
+      async progress => {
+        progress.report({ message: l('SalesforceListingApex') });
+
+        const allRecords: ISalesforceAuraDefinitionBundle[] = await connection
+          .sobject('AuraDefinitionBundle')
+          .find({})
+          .execute({ autoFetch: true })
+          .then((records: ISalesforceAuraDefinitionBundle[]) => records);
+
+        progress.report({ message: l('SalesforceChooseList') });
+
+        const selected = await vscode.window.showQuickPick(_.map(allRecords, record => record.MasterLabel), {
+          ignoreFocusOut: true,
+          placeHolder: l('SalesforceSelectComponent'),
+          matchOnDetail: true,
+          matchOnDescription: true
+        });
+
+        if (selected) {
+          const recordSelected = _.find(allRecords, record => record.MasterLabel == selected);
+          if (recordSelected) {
+            const matchingAuraComponents: ISalesforceAuraDefinition[] = await connection
+              .sobject('AuraDefinition')
+              .find({ AuraDefinitionBundleId: recordSelected.Id })
+              .execute({ autoFetch: true })
+              .then((records: any) => records);
+            matchingAuraComponents.forEach(matchingAuraComponent => {
+              const salesforceResourceType = SalesforceAura.coerceApiNameToEnum(matchingAuraComponent);
+              const matchOnSalesforceResourceType = _.find(
+                filetypesDefinition,
+                definition => definition.salesforceResourceType == salesforceResourceType
               );
-          } else {
-            resolve(DiffResult.NOTHING_TO_DIFF);
+              const suffix =
+                matchOnSalesforceResourceType && matchOnSalesforceResourceType.suffix
+                  ? matchOnSalesforceResourceType.suffix
+                  : '';
+              SalesforceAPI.saveComponentInDiffStore(
+                `${recordSelected.MasterLabel}${suffix}`,
+                salesforceResourceType,
+                SalesforceResourceLocation.DIST,
+                matchingAuraComponent.Source
+              );
+            });
+            return { bundle: matchingAuraComponents, name: recordSelected.MasterLabel };
           }
-        } else {
-          reject(DiffResult.EDITOR_NOT_ABLE_TO_DIFF);
         }
-      } else {
-        resolve(DiffResult.FILE_DOES_NOT_EXIST_LOCALLY);
+        return null;
       }
-    });
+    );
   }
 
   public async retrieveApexPages(): Promise<ISalesforceApexComponentRecord | null> {
@@ -158,7 +177,7 @@ export class SalesforceAPI {
           if (recordSelected) {
             SalesforceAPI.saveComponentInDiffStore(
               recordSelected.Name,
-              ApexResourceType.APEX_PAGE,
+              SalesforceResourceType.APEX_PAGE,
               SalesforceResourceLocation.DIST,
               recordSelected.Markup
             );
@@ -201,7 +220,7 @@ export class SalesforceAPI {
             DiffContentStore.add(
               `${SalesforceAPI.getDiffStoreScheme(
                 recordSelected.Name,
-                ApexResourceType.APEX_COMPONENT,
+                SalesforceResourceType.APEX_COMPONENT,
                 SalesforceResourceLocation.DIST
               )}`,
               recordSelected.Markup
@@ -271,7 +290,7 @@ export class SalesforceAPI {
   }
 
   public async downloadStaticResource(
-    resourceRecord: ISalesforceStaticResourceRecord
+    resourceRecord: any //ISalesforceStaticResourceRecord | ISalesforceAuraDefinitionBundle
   ): Promise<DiffResult | ExtractFolderResult> {
     const connection = (await this.salesforceConnection.login()) as jsforceextension.ConnectionExtends;
 
@@ -282,10 +301,9 @@ export class SalesforceAPI {
       },
       async progress => {
         progress.report({ message: l('SalesforceDownloadProgress') });
-
         const res: {
           body: zlib.Gunzip | PassThrough;
-        } = await fetch(`${connection.instanceUrl}${resourceRecord.Body}`, {
+        } = await fetch(`${connection.instanceUrl}${resourceRecord.Body || resourceRecord.attributes.url}`, {
           method: 'GET',
           headers: {
             Authorization: `Bearer ${connection.accessToken}`
@@ -293,22 +311,23 @@ export class SalesforceAPI {
         });
 
         if (resourceRecord.ContentType == 'application/zip') {
-          return new SalesforceStaticFolder(this, resourceRecord).extract(res);
+          return new SalesforceStaticFolder(this, resourceRecord).extract(res, this.config);
         } else {
           const content = await new SalesforceStaticResource().read(res);
 
           SalesforceAPI.saveComponentInDiffStore(
             resourceRecord.Name,
-            ApexResourceType.STATIC_RESOURCE_SIMPLE,
+            SalesforceResourceType.STATIC_RESOURCE_SIMPLE,
             SalesforceResourceLocation.DIST,
             content
           );
-          return this.diffComponentWithLocalVersion(
+          return SalesforceLocalFileManager.diffComponentWithLocalVersion(
             resourceRecord.Name,
-            ApexResourceType.STATIC_RESOURCE_SIMPLE,
-            SalesforceLocalFile.getStandardPathOfFileLocally(
+            SalesforceResourceType.STATIC_RESOURCE_SIMPLE,
+            this.config,
+            SalesforceLocalFileManager.getStandardPathOfFileLocally(
               resourceRecord.Name,
-              ApexResourceType.STATIC_RESOURCE_SIMPLE,
+              SalesforceResourceType.STATIC_RESOURCE_SIMPLE,
               this.config,
               resourceRecord.ContentType
             )
@@ -318,7 +337,10 @@ export class SalesforceAPI {
     );
   }
 
-  public async downloadApex(componentName: string, type: ApexResourceType): Promise<ISalesforceApexComponentRecord> {
+  public async downloadByName(
+    componentName: string,
+    type: SalesforceResourceType
+  ): Promise<ISalesforceApexComponentRecord> {
     const connection = await this.salesforceConnection.login();
 
     return <Promise<ISalesforceApexComponentRecord>>vscode.window.withProgress(
@@ -353,9 +375,9 @@ export class SalesforceAPI {
     );
   }
 
-  public async uploadApex(
+  public async uploadByName(
     componentName: string,
-    type: ApexResourceType,
+    type: SalesforceResourceType,
     content: any,
     filePath: vscode.Uri
   ): Promise<jsforceextension.IMedataUpsertResult> {
@@ -369,8 +391,8 @@ export class SalesforceAPI {
       async progress => {
         progress.report({ message: l('SalesforceUploadProgress') });
 
-        if (type == ApexResourceType.STATIC_RESOURCE_SIMPLE) {
-          const contentType = getContentTypeFromExtension(getExtensionFromTypeOrPath(type, filePath.fsPath));
+        if (type == SalesforceResourceType.STATIC_RESOURCE_SIMPLE) {
+          const contentType = _.find(filetypesDefinition, definition => definition.salesforceResourceType == type);
           return connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
             fullName: cleanedUpName,
             contentType,
@@ -378,9 +400,9 @@ export class SalesforceAPI {
             cacheControl: 'Public'
           });
         } else if (
-          type == ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP ||
-          type == ApexResourceType.STATIC_RESOURCE_FOLDER_UNZIP ||
-          type == ApexResourceType.STATIC_RESOURCE_FOLDER
+          type == SalesforceResourceType.STATIC_RESOURCE_INSIDE_UNZIP ||
+          type == SalesforceResourceType.STATIC_RESOURCE_FOLDER_UNZIP ||
+          type == SalesforceResourceType.STATIC_RESOURCE_FOLDER
         ) {
           const contentType = 'application/zip';
           const { buffer, resourceName } = await SalesforceStaticFolder.zip(filePath.fsPath);
@@ -402,44 +424,15 @@ export class SalesforceAPI {
     );
   }
 
-  public getComponentInDiffStore(componentName: string, type: ApexResourceType, location: SalesforceResourceLocation) {
-    return DiffContentStore.get(SalesforceAPI.getDiffStoreScheme(componentName, type, SalesforceResourceLocation.DIST));
-  }
-
-  private getUri(
-    componentName: string,
-    type: ApexResourceType,
-    location: SalesforceResourceLocation,
-    filePath: string
-  ): vscode.Uri {
-    return vscode.Uri.parse(
-      `${SalesforceResourceContentProvider.scheme}://location-${encodeURIComponent(
-        location.replace(/[\/\.]/g, '')
-      )}/key-${encodeURIComponent(componentName.replace(/[\/\.]/g, ''))}/type-${type.replace(
-        /[\/\.]/g,
-        ''
-      )}/preview.${getExtensionFromTypeOrPath(type, filePath)}?tstamp=${Date.now()}&localPath=${encodeURIComponent(
-        filePath
-      )}`
+  private fromApexResourceTypeToMetadataAPIName(type: SalesforceResourceType): string {
+    const matchOnSalesforceResourceType = _.find(
+      filetypesDefinition,
+      definition => definition.salesforceResourceType == type
     );
-  }
-
-  private fromApexResourceTypeToMetadataAPIName(type: ApexResourceType) {
-    let metadataApiName = '';
-    switch (type) {
-      case ApexResourceType.APEX_COMPONENT:
-        metadataApiName = 'ApexComponent';
-        break;
-      case ApexResourceType.APEX_PAGE:
-        metadataApiName = 'ApexPage';
-        break;
-      case ApexResourceType.STATIC_RESOURCE_SIMPLE:
-      case ApexResourceType.STATIC_RESOURCE_FOLDER_UNZIP:
-      case ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP:
-      case ApexResourceType.STATIC_RESOURCE_FOLDER:
-        metadataApiName = 'StaticResource';
-        break;
-    }
+    const metadataApiName =
+      matchOnSalesforceResourceType && matchOnSalesforceResourceType.metadataApiName
+        ? matchOnSalesforceResourceType.metadataApiName
+        : `InvalidApiName : ${type}`;
     return metadataApiName;
   }
 }

@@ -3,9 +3,10 @@ import * as path from 'path';
 import * as zlib from 'zlib';
 import { SalesforceAPI, ISalesforceApexComponentRecord, SalesforceResourceLocation } from './salesforceAPI';
 import { PassThrough } from 'stream';
-import { ApexResourceType } from './salesforceResourceTypes';
 import { l } from '../strings/Strings';
-import { SalesforceLocalFile } from './salesforceLocalFile';
+import { SalesforceLocalFileManager } from './salesforceLocalFileManager';
+import { SalesforceConfig } from './salesforceConfig';
+import { SalesforceResourceType } from '../filetypes/filetypesConverter';
 const AdmZip = require('adm-zip');
 const archiver = require('archiver');
 const parsePath = require('parse-filepath');
@@ -86,18 +87,18 @@ export class SalesforceStaticFolder {
 
   constructor(public salesforceAPI: SalesforceAPI, public record: ISalesforceApexComponentRecord) {}
 
-  public extract(res: { body: zlib.Gunzip | PassThrough }) {
+  public extract(res: { body: zlib.Gunzip | PassThrough }, config: SalesforceConfig) {
     if (this.record != null) {
       return new Promise<ExtractFolderResult>((resolve, reject) => {
-        const standardPath = SalesforceLocalFile.getStandardPathOfFileLocally(
+        const standardPath = SalesforceLocalFileManager.getStandardPathOfFileLocally(
           this.record.Name,
-          ApexResourceType.STATIC_RESOURCE_FOLDER,
+          SalesforceResourceType.STATIC_RESOURCE_FOLDER,
           this.salesforceAPI.config
         );
 
-        const standardPathUnzip = SalesforceLocalFile.getStandardPathOfFileLocally(
+        const standardPathUnzip = SalesforceLocalFileManager.getStandardPathOfFileLocally(
           this.record.Name,
-          ApexResourceType.STATIC_RESOURCE_FOLDER_UNZIP,
+          SalesforceResourceType.STATIC_RESOURCE_FOLDER_UNZIP,
           this.salesforceAPI.config
         );
 
@@ -121,7 +122,7 @@ export class SalesforceStaticFolder {
               } else {
                 const allEntries = zip.getEntries();
                 allEntries.map(entry => {
-                  return this.extractSingleFile(entry, standardPathUnzip);
+                  return this.extractSingleFile(entry, standardPathUnzip, config);
                 });
 
                 await Promise.all(allEntries);
@@ -145,36 +146,37 @@ export class SalesforceStaticFolder {
   private saveContentInDiffStore(entry: ISalesforceStaticResourceFromZip, pathToUnzip: string) {
     SalesforceAPI.saveComponentInDiffStore(
       entry.entryName,
-      ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP,
+      SalesforceResourceType.STATIC_RESOURCE_INSIDE_UNZIP,
       SalesforceResourceLocation.DIST,
       entry.getData().toString()
     );
 
-    const localContent = SalesforceLocalFile.getContentOfFileLocally(path.join(pathToUnzip, entry.entryName));
+    const localContent = SalesforceLocalFileManager.getContentOfFileLocally(path.join(pathToUnzip, entry.entryName));
     if (localContent) {
       SalesforceAPI.saveComponentInDiffStore(
         entry.entryName,
-        ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP,
+        SalesforceResourceType.STATIC_RESOURCE_INSIDE_UNZIP,
         SalesforceResourceLocation.LOCAL,
         localContent
       );
     }
   }
 
-  private extractSingleFile(entry: ISalesforceStaticResourceFromZip, pathToUnzip: string) {
+  private extractSingleFile(entry: ISalesforceStaticResourceFromZip, pathToUnzip: string, config: SalesforceConfig) {
     this.saveContentInDiffStore(entry, pathToUnzip);
-    const localContent = SalesforceLocalFile.getContentOfFileLocally(path.join(pathToUnzip, entry.entryName));
+    const localContent = SalesforceLocalFileManager.getContentOfFileLocally(path.join(pathToUnzip, entry.entryName));
 
     if (entry.isDirectory) {
       return Promise.resolve();
     } else if (localContent) {
-      return this.salesforceAPI.diffComponentWithLocalVersion(
+      return SalesforceLocalFileManager.diffComponentWithLocalVersion(
         entry.entryName,
-        ApexResourceType.STATIC_RESOURCE_INSIDE_UNZIP,
+        SalesforceResourceType.STATIC_RESOURCE_INSIDE_UNZIP,
+        config,
         path.join(pathToUnzip, entry.entryName)
       );
     } else {
-      return SalesforceLocalFile.saveFile(
+      return SalesforceLocalFileManager.saveFile(
         entry.entryName,
         entry.getData().toString(),
         path.join(pathToUnzip, entry.entryName)

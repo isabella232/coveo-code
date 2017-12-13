@@ -165,12 +165,12 @@ const provideCommandToUploadApexToSalesforce = () => {
     const componentName = SalesforceLocalFileManager.getComponentNameFromFilePath(uri.fsPath);
     const componentType = SalesforceLocalFileManager.getResourceTypeFromFilePath(uri.fsPath);
     const content = SalesforceLocalFileManager.getContentOfFileLocally(uri.fsPath);
-    if (componentName && componentType) {
-      const showErrorFeedback = (message: string, statusCode: string) => {
-        vscode.window.showErrorMessage(`Message: ${message}`);
-        vscode.window.showErrorMessage(`Status code: ${statusCode}`);
-      };
+    const showErrorFeedback = (message: string, statusCode: string) => {
+      vscode.window.showErrorMessage(`Message: ${message}`);
+      vscode.window.showErrorMessage(`Status code: ${statusCode}`);
+    };
 
+    if (componentName && componentType) {
       try {
         const metadataUpsertResult = await salesforceAPI.uploadByName(componentName, componentType, content, uri);
         if (metadataUpsertResult.success) {
@@ -184,7 +184,7 @@ const provideCommandToUploadApexToSalesforce = () => {
         showErrorFeedback(err.message, err.statusCode);
       }
     } else {
-      return Promise.reject(l('InvalidUriScheme', uri.toString()));
+      showErrorFeedback(l('InvalidUriScheme'), uri.toString());
     }
   });
 };
@@ -200,12 +200,12 @@ const provideCommandToDownloadApexFromSalesforce = () => {
     if (!componentName || !componentType) {
       return Promise.reject(l('InvalidUriScheme', uri.toString()));
     }
-
+    let recordStaticResource;
     switch (componentType) {
       case SalesforceResourceType.STATIC_RESOURCE_FOLDER:
       case SalesforceResourceType.STATIC_RESOURCE_FOLDER_UNZIP:
       case SalesforceResourceType.STATIC_RESOURCE_SIMPLE:
-        const recordStaticResource = await salesforceAPI.retrieveStaticResourceByName(componentName);
+        recordStaticResource = await salesforceAPI.retrieveStaticResourceByName(componentName);
         if (recordStaticResource) {
           return salesforceAPI.downloadStaticResource(recordStaticResource);
         } else {
@@ -217,31 +217,32 @@ const provideCommandToDownloadApexFromSalesforce = () => {
         if (extract) {
           toRetrieve = extract.resourceName;
         }
-        const recordStaticResource = await salesforceAPI.retrieveStaticResourceByName(toRetrieve);
+        recordStaticResource = await salesforceAPI.retrieveStaticResourceByName(toRetrieve);
         if (recordStaticResource) {
           return salesforceAPI.downloadStaticResource(recordStaticResource);
         } else {
           return Promise.reject(l('SalesforceComponentNotFound', componentName));
         }
 
-        const recordApex = await salesforceAPI.downloadByName(componentName, componentType);
-        if (recordApex) {
-          const localFileContent = SalesforceLocalFileManager.getContentOfFileLocally(uri.fsPath);
-          if (localFileContent) {
-            return SalesforceLocalFileManager.diffComponentWithLocalVersion(
-              componentName,
-              componentType,
-              config,
-              uri.fsPath
-            );
-          } else {
-            return SalesforceLocalFileManager.saveFile(componentName, recordApex.Markup, uri.fsPath);
-          }
+      /*const recordApex = await salesforceAPI.downloadByName(componentName, componentType);
+      if (recordApex) {
+        const localFileContent = SalesforceLocalFileManager.getContentOfFileLocally(uri.fsPath);
+        if (localFileContent) {
+          return SalesforceLocalFileManager.diffComponentWithLocalVersion(
+            componentName,
+            componentType,
+            config,
+            uri.fsPath
+          );
         } else {
-          return Promise.reject(l('SalesforceComponentNotFound', componentName));
+          return SalesforceLocalFileManager.saveFile(componentName, recordApex.Markup, uri.fsPath);
         }
+      } else {
+        return Promise.reject(l('SalesforceComponentNotFound', componentName));
+      }*/
 
       default:
+        return null;
       /*let toRetrieve = componentName;
         if (componentType == SalesforceResourceType.STATIC_RESOURCE_INSIDE_UNZIP) {
           

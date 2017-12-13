@@ -14,6 +14,7 @@ import { SalesforceStaticResource } from './salesforceStaticResource';
 import { SalesforceConfig } from './salesforceConfig';
 import { SalesforceAura } from './salesforceAuraFolder';
 import { filetypesDefinition, SalesforceResourceType } from '../filetypes/filetypesConverter';
+import { ConnectionExtends } from '../definitions/jsforce';
 const fetch = require('node-fetch');
 
 export interface ISalesforceRecord {
@@ -289,9 +290,7 @@ export class SalesforceAPI {
     );
   }
 
-  public async downloadStaticResource(
-    resourceRecord: any //ISalesforceStaticResourceRecord | ISalesforceAuraDefinitionBundle
-  ): Promise<DiffResult | ExtractFolderResult> {
+  public async downloadStaticResource(resourceRecord: any): Promise<DiffResult | ExtractFolderResult> {
     const connection = (await this.salesforceConnection.login()) as jsforceextension.ConnectionExtends;
 
     return <Promise<DiffResult | ExtractFolderResult>>vscode.window.withProgress(
@@ -390,38 +389,67 @@ export class SalesforceAPI {
       },
       async progress => {
         progress.report({ message: l('SalesforceUploadProgress') });
-
-        if (type == SalesforceResourceType.STATIC_RESOURCE_SIMPLE) {
-          const contentType = _.find(filetypesDefinition, definition => definition.salesforceResourceType == type);
-          return connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
-            fullName: cleanedUpName,
-            contentType,
-            content: new Buffer(content).toString('base64'),
-            cacheControl: 'Public'
-          });
-        } else if (
-          type == SalesforceResourceType.STATIC_RESOURCE_INSIDE_UNZIP ||
-          type == SalesforceResourceType.STATIC_RESOURCE_FOLDER_UNZIP ||
-          type == SalesforceResourceType.STATIC_RESOURCE_FOLDER
-        ) {
-          const contentType = 'application/zip';
-          const { buffer, resourceName } = await SalesforceStaticFolder.zip(filePath.fsPath);
-
-          return connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
-            fullName: resourceName,
-            contentType,
-            content: buffer.toString('base64'),
-            cacheControl: 'Public'
-          });
-        } else {
-          return connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
-            fullName: cleanedUpName,
-            label: componentName,
-            content: new Buffer(content).toString('base64')
-          });
+        switch (type) {
+          case SalesforceResourceType.STATIC_RESOURCE_SIMPLE:
+            return this.uploadSingleStaticResource(cleanedUpName, content, connection);
+          case SalesforceResourceType.STATIC_RESOURCE_INSIDE_UNZIP:
+          case SalesforceResourceType.STATIC_RESOURCE_FOLDER_UNZIP:
+          case SalesforceResourceType.STATIC_RESOURCE_FOLDER:
+            return this.uploadFolderStaticResource(filePath, type, connection);
+          default:
+            if (type.indexOf('Aura') != -1) {
+              return this.uploadAuraDefinitionBundle(filePath, cleanedUpName, connection);
+            } else {
+              return connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
+                fullName: cleanedUpName,
+                label: componentName,
+                content: new Buffer(content).toString('base64')
+              });
+            }
         }
       }
     );
+  }
+
+  private uploadSingleStaticResource(fullName: string, content: string, connection: ConnectionExtends) {
+    const contentType = _.find(
+      filetypesDefinition,
+      definition => definition.salesforceResourceType == SalesforceResourceType.STATIC_RESOURCE_SIMPLE
+    );
+    return connection.metadata.upsert(
+      this.fromApexResourceTypeToMetadataAPIName(SalesforceResourceType.STATIC_RESOURCE_SIMPLE),
+      {
+        fullName,
+        contentType,
+        content: new Buffer(content).toString('base64'),
+        cacheControl: 'Public'
+      }
+    );
+  }
+
+  private async uploadFolderStaticResource(
+    filePath: vscode.Uri,
+    type: SalesforceResourceType,
+    connection: ConnectionExtends
+  ) {
+    const contentType = 'application/zip';
+    const { buffer, resourceName } = await SalesforceStaticFolder.zip(filePath.fsPath);
+
+    return connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
+      fullName: resourceName,
+      contentType,
+      content: buffer.toString('base64'),
+      cacheControl: 'Public'
+    });
+  }
+
+  private async uploadAuraDefinitionBundle(filePath: vscode.Uri, fullName: string, connection: ConnectionExtends) {
+    const uploadData = await new SalesforceAura().getMetadataForUpload(filePath);
+    return connection.metadata.upsert('AuraDefinitionBundle', {
+      type: 'Component',
+      fullName,
+      ...uploadData
+    });
   }
 
   private fromApexResourceTypeToMetadataAPIName(type: SalesforceResourceType): string {

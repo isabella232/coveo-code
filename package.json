@@ -395,11 +395,13 @@
         "prettier": "^1.5.2",
         "tslint": "^5.5.0",
         "typescript": "^2.0.3",
-        "vscode": "^1.0.0"
+        "vscode": "^1.0.0",
+        "@types/bluebird": "^3.5.18"
     },
     "dependencies": {
         "adm-zip": "^0.4.7",
         "archiver": "^2.0.0",
+        "bluebird": "^3.5.1",
         "cheerio": "^1.0.0-rc.2",
         "html-to-text": "^3.3.0",
         "i18n-2": "^0.7.0",

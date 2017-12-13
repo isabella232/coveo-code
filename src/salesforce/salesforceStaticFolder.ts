@@ -4,7 +4,7 @@ import * as zlib from 'zlib';
 import { SalesforceAPI, ISalesforceApexComponentRecord, SalesforceResourceLocation } from './salesforceAPI';
 import { PassThrough } from 'stream';
 import { l } from '../strings/Strings';
-import { SalesforceLocalFileManager } from './salesforceLocalFileManager';
+import { SalesforceLocalFileManager, DiffResult } from './salesforceLocalFileManager';
 import { SalesforceConfig } from './salesforceConfig';
 import { SalesforceResourceType } from '../filetypes/filetypesConverter';
 const AdmZip = require('adm-zip');
@@ -120,8 +120,7 @@ export class SalesforceStaticFolder {
 
                 resolve(ExtractFolderResult.NEW_FOLDER);
               } else {
-                const allEntries = zip.getEntries();
-                allEntries.map(entry => {
+                const allEntries: Promise<void | DiffResult | boolean>[] = zip.getEntries().map(entry => {
                   return this.extractSingleFile(entry, standardPathUnzip, config);
                 });
 

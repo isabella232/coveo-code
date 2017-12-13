@@ -27,12 +27,13 @@ export enum SalesforceResourceType {
 }
 
 export interface IFileTypeDefinition {
-  extension: string;
+  extension?: string;
   contentType: string | undefined;
   salesforceResourceType: SalesforceResourceType;
   subfolder: string;
   suffix?: string;
   metadataApiName: string;
+  matcher?: (path: string) => boolean;
 }
 
 export const filetypesDefinition: IFileTypeDefinition[] = [
@@ -84,6 +85,20 @@ export const filetypesDefinition: IFileTypeDefinition[] = [
     salesforceResourceType: SalesforceResourceType.STATIC_RESOURCE_FOLDER,
     subfolder: 'staticresources',
     metadataApiName: 'StaticResource'
+  },
+  {
+    extension: 'zip',
+    contentType: 'application/zip',
+    salesforceResourceType: SalesforceResourceType.STATIC_RESOURCE_FOLDER_UNZIP,
+    subfolder: 'staticresources',
+    metadataApiName: 'StaticResource'
+  },
+  {
+    contentType: 'application/zip',
+    salesforceResourceType: SalesforceResourceType.STATIC_RESOURCE_INSIDE_UNZIP,
+    subfolder: 'staticresources',
+    metadataApiName: 'StaticResource',
+    matcher: path => path.indexOf('_unzip') != -1
   },
   {
     extension: 'app',

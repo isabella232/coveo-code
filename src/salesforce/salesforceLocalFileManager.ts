@@ -102,9 +102,14 @@ export class SalesforceLocalFileManager {
       return SalesforceResourceType.STATIC_RESOURCE_FOLDER_UNZIP;
     }
 
+    const functionMatcher = _.filter(
+      filetypesDefinition,
+      definition => (definition.matcher ? definition.matcher(filePath) : false)
+    );
+
     const extensionMatch = _.filter(
       filetypesDefinition,
-      definition => definition.extension == parsedPath.ext.replace('.', '')
+      definition => (definition.extension ? definition.extension == parsedPath.ext.replace('.', '') : true)
     );
     const folderMatch = _.filter(filetypesDefinition, definition =>
       new RegExp(`\\${path.sep}${definition.subfolder}\\${path.sep}`).test(parsedPath.absolute)
@@ -112,7 +117,7 @@ export class SalesforceLocalFileManager {
     const suffixMatch = _.filter(filetypesDefinition, definition =>
       new RegExp(`${definition.suffix}`).test(parsedPath.name)
     );
-    const rejectedEmpty = _.reject([extensionMatch, folderMatch, suffixMatch], possiblyEmpty =>
+    const rejectedEmpty = _.reject([extensionMatch, folderMatch, suffixMatch, functionMatcher], possiblyEmpty =>
       _.isEmpty(possiblyEmpty)
     );
     const intersection = (_.intersectionWith as any)(...rejectedEmpty, _.isEqual);

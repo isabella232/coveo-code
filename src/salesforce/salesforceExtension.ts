@@ -86,7 +86,7 @@ const provideCommandToRetrieveApexComponent = () => {
 
 const provideCommandToRetrieveApexPage = () => {
   vscode.commands.registerCommand('coveo.salesforce.retrieveApexPage', async () => {
-    const recordRetrieved = await salesforceAPI.retrieveApexPages();
+    const recordRetrieved = await salesforceAPI.searchForVisualForcePageAndExtractLocally();
     if (recordRetrieved) {
       return SalesforceLocalFileManager.diffComponentWithLocalVersion(
         recordRetrieved.Name,

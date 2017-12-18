@@ -1,4 +1,4 @@
-import { ISalesforceRecord, SalesforceAPI, SalesforceResourceLocation } from './salesforceAPI';
+import { ISalesforceRecord, SalesforceAPI, SalesforceResourceLocation, ISalesforceResourceAPI } from './salesforceAPI';
 import { SalesforceResourceType, filetypesDefinition } from '../filetypes/filetypesConverter';
 import * as jsforce from 'jsforce';
 import * as _ from 'lodash';
@@ -17,11 +17,11 @@ export interface ISalesforceAuraDefinition extends ISalesforceRecord {
   DefType: SalesforceResourceType;
 }
 
-export class SalesforceAuraAPI {
+export class SalesforceAuraAPI implements ISalesforceResourceAPI {
   public constructor(public connection: jsforce.Connection) {}
 
   public async retrieveLightningBundle(name: string, allRecords?: ISalesforceAuraDefinitionBundle[]) {
-    allRecords = allRecords || (await this.retrieveAllLightningBundles());
+    allRecords = allRecords || (await this.listAllRessources());
 
     const recordSelected = _.find(allRecords, record => record.MasterLabel == name);
 
@@ -55,7 +55,7 @@ export class SalesforceAuraAPI {
     return null;
   }
 
-  public async retrieveAllLightningBundles(): Promise<ISalesforceAuraDefinitionBundle[]> {
+  public async listAllRessources(): Promise<ISalesforceAuraDefinitionBundle[]> {
     return await this.connection
       .sobject('AuraDefinitionBundle')
       .find({})

@@ -13,6 +13,11 @@ import { SalesforceAura } from './salesforceAuraFolder';
 import { filetypesDefinition, SalesforceResourceType } from '../filetypes/filetypesConverter';
 import { ConnectionExtends } from '../definitions/jsforce';
 import { SalesforceAuraAPI, ISalesforceAuraDefinitionBundle } from './salesforceAuraAPI';
+import { SalesforceVisualforcePageAPI } from './salesforceVisualforcePageAPI';
+
+export interface ISalesforceResourceAPI {
+  listAllRessources(): Promise<any>;
+}
 
 export interface ISalesforceRecord {
   Id: string;
@@ -75,7 +80,7 @@ export class SalesforceAPI {
   public async searchForLightningComponentAndExtractLocally() {
     const connection = await this.establishConnection(l('SalesforceListingAura'));
     const auraAPI = new SalesforceAuraAPI(connection);
-    const allRecords = await auraAPI.retrieveAllLightningBundles();
+    const allRecords = await auraAPI.listAllRessources();
     const selected = await this.selectValueFromQuickPick(allRecords, 'MasterLabel');
     if (selected) {
       return await this.downloadAndExtractLightningComponent(selected, allRecords);
@@ -94,21 +99,11 @@ export class SalesforceAPI {
     return null;
   }
 
-  public async retrieveApexPages(): Promise<ISalesforceApexComponentRecord | null> {
+  public async searchForVisualForcePageAndExtractLocally(): Promise<ISalesforceApexComponentRecord | null> {
     const connection = await this.establishConnection(l('SalesforceListingApex'));
-
-    const allRecords: ISalesforceApexComponentRecord[] = await connection
-      .sobject('ApexPage')
-      .find({})
-      .execute({ autoFetch: true })
-      .then((records: ISalesforceApexComponentRecord[]) => records);
-
-    const selected = await vscode.window.showQuickPick(_.map(allRecords, record => record.Name), {
-      ignoreFocusOut: true,
-      placeHolder: l('SalesforceSelectComponent'),
-      matchOnDetail: true,
-      matchOnDescription: true
-    });
+    const visualForcePageAPI = new SalesforceVisualforcePageAPI(connection);
+    const allRecords = await visualForcePageAPI.listAllRessources();
+    const selected = await this.selectValueFromQuickPick(allRecords, 'Name');
 
     if (selected) {
       const recordSelected = _.find(allRecords, record => record.Name == selected);
@@ -180,6 +175,14 @@ export class SalesforceAPI {
       return this.downloadAndExtractStaticResourceByRecord(match);
     }
     return null;
+  }
+
+  public async downloadAndExtractVisualForcePageByName(name: string, allRecords?: ISalesforceApexComponentRecord[]) {
+    if (!allRecords) {
+      const connection = await this.establishConnection(l('SalesforceConnection'));
+      allRecords = await new SalesforceVisualforcePageAPI(connection).listAllRessources();
+    }
+    const match = _.find(allRecords, record => record.Name == name);
   }
 
   public async downloadByName(componentName: string, type: SalesforceResourceType, uri: vscode.Uri) {
@@ -359,7 +362,7 @@ export class SalesforceAPI {
     const connection = await this.establishConnection(l('SalesforceListingAura'));
     const auraAPI = new SalesforceAuraAPI(connection);
     if (!allRecords) {
-      allRecords = await auraAPI.retrieveAllLightningBundles();
+      allRecords = await auraAPI.listAllRessources();
     }
     const bundle = await auraAPI.retrieveLightningBundle(name, allRecords);
     if (bundle) {

@@ -3,10 +3,8 @@ import { SalesforceResourcePreviewContentProvider } from './salesforceResourcePr
 import { VisualforceFormattingProvider } from '../provider/visualforceFormattingProvider';
 import { ISalesforceApexComponentRecord, SalesforceAPI, SalesforceResourceLocation } from './salesforceAPI';
 import { SalesforceLocalFileManager, DiffResult } from './salesforceLocalFileManager';
-import { SalesforceStaticFolder } from './salesforceStaticFolder';
 import { l } from '../strings/Strings';
 import { DiffContentStore } from '../diffContentStore';
-import { SalesforceAura } from './salesforceAuraFolder';
 import { SalesforceConfig } from './salesforceConfig';
 import { SalesforceResourceType } from '../filetypes/filetypesConverter';
 
@@ -103,57 +101,13 @@ const provideCommandToRetrieveApexPage = () => {
 
 const provideCommandToRetrieveLightningComponent = () => {
   vscode.commands.registerCommand('coveo.salesforce.retrieveLightningComponent', async () => {
-    const recordsRetrieved = await salesforceAPI.retrieveLightningComponent();
-    if (recordsRetrieved) {
-      //const
-      new SalesforceAura().extract(recordsRetrieved.name, recordsRetrieved.bundle, config);
-    }
-
-    /*if (recordRetrieved) {
-      const outcome = await salesforceAPI.downloadStaticResource(recordRetrieved);
-      if (outcome == DiffResult.FILE_DOES_NOT_EXIST_LOCALLY) {
-        return afterRetrieve(
-          recordRetrieved,
-          outcome,
-          ApexResourceType.STATIC_RESOURCE_SIMPLE,
-          salesforceAPI.getComponentInDiffStore(
-            recordRetrieved.Name,
-            ApexResourceType.STATIC_RESOURCE_SIMPLE,
-            SalesforceResourceLocation.DIST
-          )
-        );
-      } else {
-        return undefined;
-      }
-    } else {
-      return undefined;
-    }*/
+    return await salesforceAPI.searchForLightningComponentAndExtractLocally();
   });
 };
 
 const provideCommandToRetrieveStaticResources = () => {
   vscode.commands.registerCommand('coveo.salesforce.retrieveStaticResource', async () => {
-    const recordRetrieved = await salesforceAPI.retrieveStaticResource();
-
-    if (recordRetrieved) {
-      const outcome = await salesforceAPI.downloadStaticResource(recordRetrieved);
-      if (outcome == DiffResult.FILE_DOES_NOT_EXIST_LOCALLY) {
-        return afterRetrieve(
-          recordRetrieved,
-          outcome,
-          SalesforceResourceType.STATIC_RESOURCE_SIMPLE,
-          SalesforceLocalFileManager.getComponentInDiffStore(
-            recordRetrieved.Name,
-            SalesforceResourceType.STATIC_RESOURCE_SIMPLE,
-            SalesforceResourceLocation.DIST
-          )
-        );
-      } else {
-        return undefined;
-      }
-    } else {
-      return undefined;
-    }
+    return await salesforceAPI.searchForStaticResourceAndExtractLocally();
   });
 };
 
@@ -200,54 +154,8 @@ const provideCommandToDownloadApexFromSalesforce = () => {
     if (!componentName || !componentType) {
       return Promise.reject(l('InvalidUriScheme', uri.toString()));
     }
-    let recordStaticResource;
-    switch (componentType) {
-      case SalesforceResourceType.STATIC_RESOURCE_FOLDER:
-      case SalesforceResourceType.STATIC_RESOURCE_FOLDER_UNZIP:
-      case SalesforceResourceType.STATIC_RESOURCE_SIMPLE:
-        recordStaticResource = await salesforceAPI.retrieveStaticResourceByName(componentName);
-        if (recordStaticResource) {
-          return salesforceAPI.downloadStaticResource(recordStaticResource);
-        } else {
-          return Promise.reject(l('SalesforceComponentNotFound', componentName));
-        }
-      case SalesforceResourceType.STATIC_RESOURCE_INSIDE_UNZIP:
-        let toRetrieve = componentName;
-        const extract = SalesforceStaticFolder.extractResourceInfoForFileInsizeZip(uri.fsPath);
-        if (extract) {
-          toRetrieve = extract.resourceName;
-        }
-        recordStaticResource = await salesforceAPI.retrieveStaticResourceByName(toRetrieve);
-        if (recordStaticResource) {
-          return salesforceAPI.downloadStaticResource(recordStaticResource);
-        } else {
-          return Promise.reject(l('SalesforceComponentNotFound', componentName));
-        }
 
-      /*const recordApex = await salesforceAPI.downloadByName(componentName, componentType);
-      if (recordApex) {
-        const localFileContent = SalesforceLocalFileManager.getContentOfFileLocally(uri.fsPath);
-        if (localFileContent) {
-          return SalesforceLocalFileManager.diffComponentWithLocalVersion(
-            componentName,
-            componentType,
-            config,
-            uri.fsPath
-          );
-        } else {
-          return SalesforceLocalFileManager.saveFile(componentName, recordApex.Markup, uri.fsPath);
-        }
-      } else {
-        return Promise.reject(l('SalesforceComponentNotFound', componentName));
-      }*/
-
-      default:
-        return null;
-      /*let toRetrieve = componentName;
-        if (componentType == SalesforceResourceType.STATIC_RESOURCE_INSIDE_UNZIP) {
-          
-        }*/
-    }
+    return salesforceAPI.downloadByName(componentName, componentType, uri);
   });
 };
 
@@ -261,21 +169,15 @@ const provideCommandToTakeRemoteFileFromSalesforce = () => {
       return Promise.reject(l('InvalidUriScheme', uri.toString()));
     }
 
-    if (componentType == SalesforceResourceType.APEX_COMPONENT || componentType == SalesforceResourceType.APEX_PAGE) {
-      const record = await salesforceAPI.downloadByName(componentName, componentType);
-      await SalesforceLocalFileManager.saveFile(componentName, record.Markup, localPath);
+    const content = DiffContentStore.get(
+      SalesforceAPI.getDiffStoreScheme(componentName, componentType, SalesforceResourceLocation.DIST)
+    );
+
+    if (content) {
+      await SalesforceLocalFileManager.saveFile(componentName, content, localPath);
       return vscode.commands.executeCommand('workbench.action.closeActiveEditor');
     } else {
-      const content = DiffContentStore.get(
-        SalesforceAPI.getDiffStoreScheme(componentName, componentType, SalesforceResourceLocation.DIST)
-      );
-
-      if (content) {
-        await SalesforceLocalFileManager.saveFile(componentName, content, localPath);
-        return vscode.commands.executeCommand('workbench.action.closeActiveEditor');
-      } else {
-        return Promise.reject(l('FileNotFound'));
-      }
+      return Promise.reject(l('FileNotFound'));
     }
   });
 };

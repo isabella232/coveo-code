@@ -1,4 +1,3 @@
-import { ISalesforceAuraDefinition } from './salesforceAPI';
 import { DiffResult, SalesforceLocalFileManager } from './salesforceLocalFileManager';
 import { SalesforceConfig } from './salesforceConfig';
 import { SalesforceResourceType } from '../filetypes/filetypesConverter';
@@ -7,6 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as bluebird from 'bluebird';
 import * as _ from 'lodash';
+import { ISalesforceAuraDefinition } from './salesforceAuraAPI';
 const parsepath = require('parse-filepath');
 const readdir = bluebird.promisify(fs.readdir);
 const readfile = bluebird.promisify(fs.readFile);
@@ -16,7 +16,7 @@ export class SalesforceAura {
     return SalesforceResourceType[`AURA_${bundleFile.DefType}` as any] as SalesforceResourceType;
   }
 
-  public async extract(name: string, bundle: ISalesforceAuraDefinition[], config: SalesforceConfig) {
+  public static async extract(name: string, bundle: ISalesforceAuraDefinition[], config: SalesforceConfig) {
     return await bundle.map(async fileInBundle => {
       const standardPath = SalesforceLocalFileManager.getStandardPathOfFileLocally(
         name,

@@ -1,21 +1,18 @@
 import * as vscode from 'vscode';
-import * as jsforce from 'jsforce';
 import * as _ from 'lodash';
-import * as zlib from 'zlib';
 import * as jsforceextension from '../definitions/jsforce';
 import { SalesforceResourcePreviewContentProvider } from './salesforceResourcePreviewContentProvider';
 import { DiffContentStore } from '../diffContentStore';
 import { l } from '../strings/Strings';
-import { PassThrough } from 'stream';
 import { SalesforceConnection } from './salesforceConnection';
 import { SalesforceStaticFolder, ExtractFolderResult } from './salesforceStaticFolder';
-import { SalesforceLocalFileManager, DiffResult } from './salesforceLocalFileManager';
-import { SalesforceStaticResource } from './salesforceStaticResource';
+import { DiffResult } from './salesforceLocalFileManager';
+import { SalesforceStaticResourceAPI } from './salesforceStaticResourceAPI';
 import { SalesforceConfig } from './salesforceConfig';
 import { SalesforceAura } from './salesforceAuraFolder';
 import { filetypesDefinition, SalesforceResourceType } from '../filetypes/filetypesConverter';
 import { ConnectionExtends } from '../definitions/jsforce';
-const fetch = require('node-fetch');
+import { SalesforceAuraAPI, ISalesforceAuraDefinitionBundle } from './salesforceAuraAPI';
 
 export interface ISalesforceRecord {
   Id: string;
@@ -31,19 +28,6 @@ export interface ISalesforceApexComponentRecord {
   Name: string;
   Markup: string;
   ContentType?: string;
-}
-
-export interface ISalesforceAuraDefinitionBundle extends ISalesforceRecord {
-  DeveloperName: string;
-  Language: string;
-  MasterLabel: string;
-  NameSpacePrefix: string;
-  Description: string;
-}
-
-export interface ISalesforceAuraDefinition extends ISalesforceRecord {
-  Source: string;
-  DefType: SalesforceResourceType;
 }
 
 export interface ISalesforceStaticResourceRecord extends ISalesforceApexComponentRecord {
@@ -88,290 +72,149 @@ export class SalesforceAPI {
     this.salesforceConnection = new SalesforceConnection(config);
   }
 
-  public async retrieveLightningComponent(): Promise<{ bundle: ISalesforceAuraDefinition[]; name: string } | null> {
-    const connection = await this.salesforceConnection.login();
+  public async searchForLightningComponentAndExtractLocally() {
+    const connection = await this.establishConnection(l('SalesforceListingAura'));
+    const auraAPI = new SalesforceAuraAPI(connection);
+    const allRecords = await auraAPI.retrieveAllLightningBundles();
+    const selected = await this.selectValueFromQuickPick(allRecords, 'MasterLabel');
+    if (selected) {
+      return await this.downloadAndExtractLightningComponent(selected, allRecords);
+    }
+    return null;
+  }
 
-    return vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Window,
-        title: l('SalesforceConnection')
-      },
-      async progress => {
-        progress.report({ message: l('SalesforceListingApex') });
+  public async searchForStaticResourceAndExtractLocally() {
+    const connection = await this.establishConnection(l('SalesforceListingApex'));
+    const allRecords = await new SalesforceStaticResourceAPI(connection).listAllRessources();
+    const selected = await this.selectValueFromQuickPick(allRecords, 'Name');
 
-        const allRecords: ISalesforceAuraDefinitionBundle[] = await connection
-          .sobject('AuraDefinitionBundle')
-          .find({})
-          .execute({ autoFetch: true })
-          .then((records: ISalesforceAuraDefinitionBundle[]) => records);
-
-        progress.report({ message: l('SalesforceChooseList') });
-
-        const selected = await vscode.window.showQuickPick(_.map(allRecords, record => record.MasterLabel), {
-          ignoreFocusOut: true,
-          placeHolder: l('SalesforceSelectComponent'),
-          matchOnDetail: true,
-          matchOnDescription: true
-        });
-
-        if (selected) {
-          const recordSelected = _.find(allRecords, record => record.MasterLabel == selected);
-          if (recordSelected) {
-            const matchingAuraComponents: ISalesforceAuraDefinition[] = await connection
-              .sobject('AuraDefinition')
-              .find({ AuraDefinitionBundleId: recordSelected.Id })
-              .execute({ autoFetch: true })
-              .then((records: any) => records);
-            matchingAuraComponents.forEach(matchingAuraComponent => {
-              const salesforceResourceType = SalesforceAura.coerceApiNameToEnum(matchingAuraComponent);
-              const matchOnSalesforceResourceType = _.find(
-                filetypesDefinition,
-                definition => definition.salesforceResourceType == salesforceResourceType
-              );
-              const suffix =
-                matchOnSalesforceResourceType && matchOnSalesforceResourceType.suffix
-                  ? matchOnSalesforceResourceType.suffix
-                  : '';
-              SalesforceAPI.saveComponentInDiffStore(
-                `${recordSelected.MasterLabel}${suffix}`,
-                salesforceResourceType,
-                SalesforceResourceLocation.DIST,
-                matchingAuraComponent.Source
-              );
-            });
-            return { bundle: matchingAuraComponents, name: recordSelected.MasterLabel };
-          }
-        }
-        return null;
-      }
-    );
+    if (selected) {
+      return await this.downloadAndExtractStaticResourceByName(selected, allRecords);
+    }
+    return null;
   }
 
   public async retrieveApexPages(): Promise<ISalesforceApexComponentRecord | null> {
-    const connection = await this.salesforceConnection.login();
+    const connection = await this.establishConnection(l('SalesforceListingApex'));
 
-    return vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Window,
-        title: l('SalesforceConnection')
-      },
-      async progress => {
-        progress.report({ message: l('SalesforceListingApex') });
+    const allRecords: ISalesforceApexComponentRecord[] = await connection
+      .sobject('ApexPage')
+      .find({})
+      .execute({ autoFetch: true })
+      .then((records: ISalesforceApexComponentRecord[]) => records);
 
-        const allRecords: ISalesforceApexComponentRecord[] = await connection
-          .sobject('ApexPage')
-          .find({})
-          .execute({ autoFetch: true })
-          .then((records: ISalesforceApexComponentRecord[]) => records);
+    const selected = await vscode.window.showQuickPick(_.map(allRecords, record => record.Name), {
+      ignoreFocusOut: true,
+      placeHolder: l('SalesforceSelectComponent'),
+      matchOnDetail: true,
+      matchOnDescription: true
+    });
 
-        progress.report({ message: l('SalesforceChooseList') });
-
-        const selected = await vscode.window.showQuickPick(_.map(allRecords, record => record.Name), {
-          ignoreFocusOut: true,
-          placeHolder: l('SalesforceSelectComponent'),
-          matchOnDetail: true,
-          matchOnDescription: true
-        });
-
-        if (selected) {
-          const recordSelected = _.find(allRecords, record => record.Name == selected);
-          if (recordSelected) {
-            SalesforceAPI.saveComponentInDiffStore(
-              recordSelected.Name,
-              SalesforceResourceType.APEX_PAGE,
-              SalesforceResourceLocation.DIST,
-              recordSelected.Markup
-            );
-            return recordSelected;
-          }
-        }
-        return null;
+    if (selected) {
+      const recordSelected = _.find(allRecords, record => record.Name == selected);
+      if (recordSelected) {
+        SalesforceAPI.saveComponentInDiffStore(
+          recordSelected.Name,
+          SalesforceResourceType.APEX_PAGE,
+          SalesforceResourceLocation.DIST,
+          recordSelected.Markup
+        );
+        vscode.window.showInformationMessage(l('SalesforceDownloadSuccess', selected));
+        return recordSelected;
       }
-    );
+    }
+    return null;
   }
 
   public async retrieveApexComponents(): Promise<ISalesforceApexComponentRecord | null> {
-    const connection: jsforce.Connection = await this.salesforceConnection.login();
+    const connection = await this.establishConnection(l('SalesforceListingApex'));
 
-    return vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Window,
-        title: l('SalesforceConnection')
-      },
-      async progress => {
-        progress.report({ message: l('SalesforceListingApex') });
+    const allRecords: ISalesforceApexComponentRecord[] = await connection
+      .sobject('ApexComponent')
+      .find({})
+      .execute({ autoFetch: true })
+      .then((records: ISalesforceApexComponentRecord[]) => records);
 
-        const allRecords: ISalesforceApexComponentRecord[] = await connection
-          .sobject('ApexComponent')
-          .find({})
-          .execute({ autoFetch: true })
-          .then((records: ISalesforceApexComponentRecord[]) => records);
+    const selected = await vscode.window.showQuickPick(_.map(allRecords, record => record.Name), {
+      ignoreFocusOut: true,
+      placeHolder: l('SalesforceSelectComponent'),
+      matchOnDetail: true,
+      matchOnDescription: true
+    });
 
-        progress.report({ message: l('SalesforceChooseList') });
-        const selected = await vscode.window.showQuickPick(_.map(allRecords, record => record.Name), {
-          ignoreFocusOut: true,
-          placeHolder: l('SalesforceSelectComponent'),
-          matchOnDetail: true,
-          matchOnDescription: true
-        });
-
-        if (selected) {
-          const recordSelected = _.find(allRecords, record => record.Name == selected);
-          if (recordSelected) {
-            DiffContentStore.add(
-              `${SalesforceAPI.getDiffStoreScheme(
-                recordSelected.Name,
-                SalesforceResourceType.APEX_COMPONENT,
-                SalesforceResourceLocation.DIST
-              )}`,
-              recordSelected.Markup
-            );
-            return recordSelected;
-          }
-        }
-
-        return null;
+    if (selected) {
+      const recordSelected = _.find(allRecords, record => record.Name == selected);
+      if (recordSelected) {
+        DiffContentStore.add(
+          `${SalesforceAPI.getDiffStoreScheme(
+            recordSelected.Name,
+            SalesforceResourceType.APEX_COMPONENT,
+            SalesforceResourceLocation.DIST
+          )}`,
+          recordSelected.Markup
+        );
+        vscode.window.showInformationMessage(l('SalesforceDownloadSuccess', selected));
+        return recordSelected;
       }
-    );
+    }
+    return null;
   }
 
-  public async retrieveStaticResourceByName(componentName: string): Promise<ISalesforceStaticResourceRecord | null> {
-    const connection = await this.salesforceConnection.login();
-    return vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Window,
-        title: l('SalesforceConnection')
-      },
-      progress => {
-        progress.report({ message: l('SalesforceConnection') });
-        return connection
-          .sobject('StaticResource')
-          .find({ name: componentName })
-          .execute({ autoFetch: true })
-          .then((records: ISalesforceStaticResourceRecord[]) => _.first(records));
-      }
-    );
+  public async downloadAndExtractStaticResourceByRecord(
+    resourceRecord: any
+  ): Promise<DiffResult | ExtractFolderResult | null> {
+    const connection = await this.establishConnection(l('SalesforceDownloadProgress'));
+    const salesforceStaticResourceAPI = new SalesforceStaticResourceAPI(connection);
+    const staticResourceData = await salesforceStaticResourceAPI.downloadResource(resourceRecord);
+    const outcome = await salesforceStaticResourceAPI.extractLocally(resourceRecord, staticResourceData, this);
+    return outcome;
   }
 
-  public async retrieveStaticResource(condition = {}): Promise<ISalesforceStaticResourceRecord | null> {
-    const connection = await this.salesforceConnection.login();
-
-    return vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Window,
-        title: l('SalesforceConnection')
-      },
-      async progress => {
-        progress.report({ message: l('SalesforceListingApex') });
-
-        const allRecords: ISalesforceStaticResourceRecord[] = await connection
-          .sobject('StaticResource')
-          .find(condition)
-          .execute({ autoFetch: true })
-          .then((records: ISalesforceStaticResourceRecord[]) => records);
-
-        progress.report({ message: l('SalesforceChooseList') });
-
-        const selected = await vscode.window.showQuickPick(_.map(allRecords, record => record.Name), {
-          ignoreFocusOut: true,
-          placeHolder: l('SalesforceSelectComponent'),
-          matchOnDetail: true,
-          matchOnDescription: true
-        });
-
-        if (selected) {
-          const recordSelected = _.find(allRecords, record => record.Name == selected);
-          if (recordSelected) {
-            return recordSelected;
-          }
-        }
-        return null;
-      }
-    );
+  public async downloadAndExtractStaticResourceByName(name: string, allRecords?: ISalesforceStaticResourceRecord[]) {
+    if (!allRecords) {
+      const connection = await this.establishConnection(l('SalesforceConnection'));
+      allRecords = await new SalesforceStaticResourceAPI(connection).listAllRessources();
+    }
+    const match = _.find(allRecords, record => record.Name == name);
+    if (match) {
+      return this.downloadAndExtractStaticResourceByRecord(match);
+    }
+    return null;
   }
 
-  public async downloadStaticResource(resourceRecord: any): Promise<DiffResult | ExtractFolderResult> {
-    const connection = (await this.salesforceConnection.login()) as jsforceextension.ConnectionExtends;
-
-    return <Promise<DiffResult | ExtractFolderResult>>vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Window,
-        title: l('SalesforceConnection')
-      },
-      async progress => {
-        progress.report({ message: l('SalesforceDownloadProgress') });
-        const res: {
-          body: zlib.Gunzip | PassThrough;
-        } = await fetch(`${connection.instanceUrl}${resourceRecord.Body || resourceRecord.attributes.url}`, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${connection.accessToken}`
-          }
-        });
-
-        if (resourceRecord.ContentType == 'application/zip') {
-          return new SalesforceStaticFolder(this, resourceRecord).extract(res, this.config);
+  public async downloadByName(componentName: string, type: SalesforceResourceType, uri: vscode.Uri) {
+    switch (type) {
+      case SalesforceResourceType.STATIC_RESOURCE_INSIDE_UNZIP:
+        this.downloadFolderStaticResource(uri);
+        break;
+      case SalesforceResourceType.STATIC_RESOURCE_SIMPLE:
+        this.downloadSingleStaticResource(componentName);
+        break;
+      default:
+        if (type.indexOf('Aura') != -1) {
+          this.downloadAndExtractLightningComponent(componentName);
         } else {
-          const content = await new SalesforceStaticResource().read(res);
-
-          SalesforceAPI.saveComponentInDiffStore(
-            resourceRecord.Name,
-            SalesforceResourceType.STATIC_RESOURCE_SIMPLE,
-            SalesforceResourceLocation.DIST,
-            content
-          );
-          return SalesforceLocalFileManager.diffComponentWithLocalVersion(
-            resourceRecord.Name,
-            SalesforceResourceType.STATIC_RESOURCE_SIMPLE,
-            this.config,
-            SalesforceLocalFileManager.getStandardPathOfFileLocally(
-              resourceRecord.Name,
-              SalesforceResourceType.STATIC_RESOURCE_SIMPLE,
-              this.config,
-              resourceRecord.ContentType
-            )
-          );
+          /*ret = connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
+            fullName: cleanedUpName,
+            label: componentName,
+            content: new Buffer(content).toString('base64')
+          });*/
         }
-      }
-    );
-  }
-
-  public async downloadByName(
-    componentName: string,
-    type: SalesforceResourceType
-  ): Promise<ISalesforceApexComponentRecord> {
-    const connection = await this.salesforceConnection.login();
-
-    return <Promise<ISalesforceApexComponentRecord>>vscode.window.withProgress(
-      {
-        title: l('SalesforceConnection'),
-        location: vscode.ProgressLocation.Window
-      },
-      async progress => {
-        progress.report({ message: l('SalesforceListingApex') });
-
-        const allRecords = await connection
-          .sobject(this.fromApexResourceTypeToMetadataAPIName(type))
-          .find({
-            name: componentName
-          })
-          .limit(1)
-          .execute()
-          .then((records: ISalesforceApexComponentRecord[]) => records);
-
-        if (allRecords && !_.isEmpty(allRecords)) {
-          SalesforceAPI.saveComponentInDiffStore(
-            componentName,
-            type,
-            SalesforceResourceLocation.DIST,
-            allRecords[0].Markup
-          );
-          return allRecords[0];
-        } else {
-          return Promise.reject(l('SalesforceComponentNotFound', componentName));
-        }
-      }
-    );
+    }
+    /*
+    if (!_.isEmpty(allRecords)) {
+      SalesforceAPI.saveComponentInDiffStore(
+        componentName,
+        type,
+        SalesforceResourceLocation.DIST,
+        allRecords[0].Markup
+      );
+      vscode.window.showInformationMessage(l('SalesforceDownloadSuccess', componentName));
+      return allRecords[0];
+    } else {
+      vscode.window.showErrorMessage(l('SalesforceComponentNotFound', componentName));
+      return Promise.reject(l('SalesforceComponentNotFound', componentName));
+    }*/
   }
 
   public async uploadByName(
@@ -380,35 +223,50 @@ export class SalesforceAPI {
     content: any,
     filePath: vscode.Uri
   ): Promise<jsforceextension.IMedataUpsertResult> {
-    const connection = (await this.salesforceConnection.login()) as jsforceextension.ConnectionExtends;
+    const connection = await this.establishConnection(l('SalesforceUploadProgress'));
     const cleanedUpName = componentName.replace(/[^a-zA-Z0-9]/g, '');
-    return <Promise<jsforceextension.IMedataUpsertResult>>vscode.window.withProgress(
+    let ret;
+    switch (type) {
+      case SalesforceResourceType.STATIC_RESOURCE_SIMPLE:
+        ret = this.uploadSingleStaticResource(cleanedUpName, content, connection);
+        break;
+      case SalesforceResourceType.STATIC_RESOURCE_INSIDE_UNZIP:
+      case SalesforceResourceType.STATIC_RESOURCE_FOLDER_UNZIP:
+      case SalesforceResourceType.STATIC_RESOURCE_FOLDER:
+        ret = this.uploadFolderStaticResource(filePath, type, connection);
+        break;
+      default:
+        if (type.indexOf('Aura') != -1) {
+          ret = this.uploadAuraDefinitionBundle(filePath, cleanedUpName, connection);
+        } else {
+          ret = connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
+            fullName: cleanedUpName,
+            label: componentName,
+            content: new Buffer(content).toString('base64')
+          });
+        }
+    }
+
+    return ret;
+  }
+
+  private async establishConnection(
+    messageFeedback: string,
+    progressStatus?: (reporter: vscode.Progress<any>, connection: ConnectionExtends) => void
+  ) {
+    const connection = <ConnectionExtends>await this.salesforceConnection.login();
+    vscode.window.withProgress(
       {
-        title: l('SalesforceConnection'),
-        location: vscode.ProgressLocation.Window
+        location: vscode.ProgressLocation.Window,
+        title: l('SalesforceConnection')
       },
       async progress => {
-        progress.report({ message: l('SalesforceUploadProgress') });
-        switch (type) {
-          case SalesforceResourceType.STATIC_RESOURCE_SIMPLE:
-            return this.uploadSingleStaticResource(cleanedUpName, content, connection);
-          case SalesforceResourceType.STATIC_RESOURCE_INSIDE_UNZIP:
-          case SalesforceResourceType.STATIC_RESOURCE_FOLDER_UNZIP:
-          case SalesforceResourceType.STATIC_RESOURCE_FOLDER:
-            return this.uploadFolderStaticResource(filePath, type, connection);
-          default:
-            if (type.indexOf('Aura') != -1) {
-              return this.uploadAuraDefinitionBundle(filePath, cleanedUpName, connection);
-            } else {
-              return connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
-                fullName: cleanedUpName,
-                label: componentName,
-                content: new Buffer(content).toString('base64')
-              });
-            }
-        }
+        progress.report({ message: messageFeedback });
+        progressStatus ? progressStatus(progress, connection) : null;
       }
     );
+
+    return connection;
   }
 
   private uploadSingleStaticResource(fullName: string, content: string, connection: ConnectionExtends) {
@@ -427,6 +285,15 @@ export class SalesforceAPI {
     );
   }
 
+  private async downloadSingleStaticResource(name: string) {
+    const connection = await this.establishConnection(l('SalesforceListingApex'));
+    const salesforceStaticResourceAPI = new SalesforceStaticResourceAPI(connection);
+    const record = await salesforceStaticResourceAPI.getResourceRecordByName(name);
+    if (record) {
+      this.downloadAndExtractStaticResourceByRecord(record);
+    }
+  }
+
   private async uploadFolderStaticResource(
     filePath: vscode.Uri,
     type: SalesforceResourceType,
@@ -441,6 +308,19 @@ export class SalesforceAPI {
       content: buffer.toString('base64'),
       cacheControl: 'Public'
     });
+  }
+
+  private async downloadFolderStaticResource(uri: vscode.Uri) {
+    const connection = await this.establishConnection(l('SalesforceListingApex'));
+    const salesforceStaticResourceAPI = new SalesforceStaticResourceAPI(connection);
+    const info = SalesforceStaticFolder.extractResourceInfoForFileInsizeZip(uri.fsPath);
+
+    if (info) {
+      const record = await salesforceStaticResourceAPI.getResourceRecordByName(info.resourceName);
+      if (record) {
+        this.downloadAndExtractStaticResourceByRecord(record);
+      }
+    }
   }
 
   private async uploadAuraDefinitionBundle(filePath: vscode.Uri, fullName: string, connection: ConnectionExtends) {
@@ -462,5 +342,29 @@ export class SalesforceAPI {
         ? matchOnSalesforceResourceType.metadataApiName
         : `InvalidApiName : ${type}`;
     return metadataApiName;
+  }
+
+  private async selectValueFromQuickPick(allRecords: { [key: string]: any }, keyForComparison: string) {
+    const map: string[] = _.map(allRecords, record => record[keyForComparison]);
+
+    return await vscode.window.showQuickPick(map, {
+      ignoreFocusOut: true,
+      placeHolder: l('SalesforceSelectComponent'),
+      matchOnDetail: true,
+      matchOnDescription: true
+    });
+  }
+
+  private async downloadAndExtractLightningComponent(name: string, allRecords?: ISalesforceAuraDefinitionBundle[]) {
+    const connection = await this.establishConnection(l('SalesforceListingAura'));
+    const auraAPI = new SalesforceAuraAPI(connection);
+    if (!allRecords) {
+      allRecords = await auraAPI.retrieveAllLightningBundles();
+    }
+    const bundle = await auraAPI.retrieveLightningBundle(name, allRecords);
+    if (bundle) {
+      vscode.window.showInformationMessage(l('SalesforceDownloadSuccess', name));
+      await SalesforceAura.extract(name, bundle, this.config);
+    }
   }
 }

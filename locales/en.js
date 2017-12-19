@@ -34,5 +34,5 @@
 	"SalesforceInvalidLoginConfig": "Invalid salesforce login configuration",
 	"SalesforceMissingConfig": "Missing configuration for coveocode.salesforce.organization.%s",
 	"SaleforceConnecting": "SaleforceConnecting",
-	"asd": "asd"
+	"SalesforceListingAura": "SalesforceListingAura"
 }

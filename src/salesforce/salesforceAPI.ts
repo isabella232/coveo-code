@@ -135,7 +135,7 @@ export class SalesforceAPI {
           break;
         default:
           if (componentType.indexOf('Aura') != -1) {
-            processDownload = this.downloadAndExtractLightningComponentByName(name);
+            processDownload = this.downloadAndExtractLightningComponentByName(componentName);
           }
       }
     }
@@ -171,11 +171,14 @@ export class SalesforceAPI {
           if (componentType.indexOf('Aura') != -1) {
             processUpload = this.uploadAuraDefinitionBundle(uri, cleanedUpName, connection);
           } else {
-            processUpload = connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(componentType), {
+            const upsertResult = connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(componentType), {
               fullName: cleanedUpName,
               label: componentName,
               content: new Buffer(content).toString('base64')
             });
+            processUpload = upsertResult;
+            const upsert: IMedataUpsertResult = await upsertResult;
+            this.handleUpsertResultErrors(upsert);
           }
       }
     }
@@ -279,7 +282,7 @@ export class SalesforceAPI {
     return connection;
   }
 
-  private uploadSingleStaticResource(fullName: string, content: string, connection: ConnectionExtends) {
+  private async uploadSingleStaticResource(fullName: string, content: string, connection: ConnectionExtends) {
     const match = _.find(
       filetypesDefinition,
       definition => definition.salesforceResourceType == SalesforceResourceType.STATIC_RESOURCE_SIMPLE
@@ -287,7 +290,7 @@ export class SalesforceAPI {
 
     if (match && match.contentType) {
       const contentType = match.contentType;
-      return connection.metadata.upsert(
+      const upsert = await connection.metadata.upsert(
         this.fromApexResourceTypeToMetadataAPIName(SalesforceResourceType.STATIC_RESOURCE_SIMPLE),
         {
           fullName,
@@ -296,6 +299,8 @@ export class SalesforceAPI {
           cacheControl: 'Public'
         }
       );
+      this.handleUpsertResultErrors(upsert);
+      return upsert;
     }
     return null;
   }
@@ -307,21 +312,24 @@ export class SalesforceAPI {
   ) {
     const contentType = 'application/zip';
     const { buffer, resourceName } = await SalesforceStaticFolder.zip(filePath.fsPath);
-    return connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
+    const upsert = await connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
       fullName: resourceName,
       contentType,
       content: buffer.toString('base64'),
       cacheControl: 'Public'
     });
+    this.handleUpsertResultErrors(upsert);
+    return upsert;
   }
 
   private async uploadAuraDefinitionBundle(filePath: vscode.Uri, fullName: string, connection: ConnectionExtends) {
     const uploadData = await new SalesforceAura().getMetadataForUpload(filePath);
-    return connection.metadata.upsert('AuraDefinitionBundle', {
-      type: 'Component',
+    const upsert = await connection.metadata.upsert('AuraDefinitionBundle', {
       fullName,
       ...uploadData
     });
+    this.handleUpsertResultErrors(upsert);
+    return upsert;
   }
 
   private fromApexResourceTypeToMetadataAPIName(type: SalesforceResourceType): string {
@@ -345,5 +353,11 @@ export class SalesforceAPI {
       matchOnDetail: true,
       matchOnDescription: true
     });
+  }
+
+  private handleUpsertResultErrors(upsert: IMedataUpsertResult) {
+    if (upsert.errors) {
+      throw upsert.errors;
+    }
   }
 }

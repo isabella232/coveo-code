@@ -61,6 +61,7 @@ export class SalesforceAura {
       if (type) {
         const buffer = await readfile(filePath);
         return {
+          type,
           apiField: this.mapResourceTypeToMetadataApiField(type),
           buffer
         };
@@ -71,13 +72,36 @@ export class SalesforceAura {
     const ret: { [key: string]: string } = {};
     _.compact(results).forEach(result => {
       ret[result.apiField] = result.buffer.toString('base64');
+      const metadataType = this.mapResourceTypeToMetadataApiType(result.type);
+      if (metadataType) {
+        ret['type'] = metadataType;
+      }
     });
     return ret;
+  }
+
+  private mapResourceTypeToMetadataApiType(type: SalesforceResourceType) {
+    // See : https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_auradefinitionbundle.htm
+    switch (type) {
+      case SalesforceResourceType.AURA_APPLICATION:
+        return 'Application';
+      case SalesforceResourceType.AURA_COMPONENT:
+        return 'Component';
+      case SalesforceResourceType.AURA_EVENT:
+        return 'Event';
+      case SalesforceResourceType.AURA_INTERFACE:
+        return 'Interface';
+      case SalesforceResourceType.AURA_TOKENS:
+        return 'Tokens';
+      default:
+        return null;
+    }
   }
 
   private mapResourceTypeToMetadataApiField(type: SalesforceResourceType) {
     // See : https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_auradefinitionbundle.htm
     switch (type) {
+      case SalesforceResourceType.AURA_EVENT:
       case SalesforceResourceType.AURA_COMPONENT:
         return 'markup';
       case SalesforceResourceType.AURA_CONTROLLER:

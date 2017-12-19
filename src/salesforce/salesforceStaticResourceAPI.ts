@@ -9,6 +9,7 @@ import { SalesforceLocalFileManager, DiffResult } from './salesforceLocalFileMan
 import { Gunzip } from 'zlib';
 import { SalesforceStaticFolder } from './salesforceStaticFolder';
 import { ISalesforceApexComponentRecord } from './salesforceApexComponentAPI';
+import { l } from '../strings/Strings';
 const fetch = require('node-fetch');
 
 export interface ISalesforceStaticResourceRecord extends ISalesforceApexComponentRecord {
@@ -20,26 +21,26 @@ export class SalesforceStaticResourceAPI {
   public constructor(public connection: ConnectionExtends) {}
 
   public async listAllRessources() {
-    const allRecords: ISalesforceStaticResourceRecord[] = await this.connection
+    const allRecords: Promise<ISalesforceStaticResourceRecord[]> = this.connection
       .sobject('StaticResource')
       .find()
       .execute({ autoFetch: true })
       .then((records: ISalesforceStaticResourceRecord[]) => records);
-
-    return allRecords;
+    vscode.window.setStatusBarMessage(l('SalesforceListingStaticResources'), allRecords);
+    return await allRecords;
   }
 
   public async downloadResource(resourceRecord: any) {
-    const res: {
+    const res: Promise<{
       body: zlib.Gunzip | PassThrough;
-    } = await fetch(`${this.connection.instanceUrl}${resourceRecord.Body || resourceRecord.attributes.url}`, {
+    }> = fetch(`${this.connection.instanceUrl}${resourceRecord.Body || resourceRecord.attributes.url}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${this.connection.accessToken}`
       }
     });
-
-    return res;
+    vscode.window.setStatusBarMessage(l('SalesforceDownloading'), res);
+    return await res;
   }
 
   public async getResourceRecordByName(name: string) {

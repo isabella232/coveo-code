@@ -66,7 +66,7 @@ export class SalesforceAPI {
   }
 
   public async searchForLightningComponentAndExtractLocally() {
-    const connection = await this.establishConnection(l('SalesforceListingAura'));
+    const connection = await this.establishConnection();
     const auraAPI = new SalesforceAuraAPI(connection);
     const allRecords = await auraAPI.listAllRessources();
     const selected = await this.selectValueFromQuickPick(allRecords, 'MasterLabel');
@@ -78,7 +78,7 @@ export class SalesforceAPI {
   }
 
   public async searchForStaticResourceAndExtractLocally() {
-    const connection = await this.establishConnection(l('SalesforceListingApex'));
+    const connection = await this.establishConnection();
     const allRecords = await new SalesforceStaticResourceAPI(connection).listAllRessources();
     const selected = await this.selectValueFromQuickPick(allRecords, 'Name');
 
@@ -90,7 +90,7 @@ export class SalesforceAPI {
   }
 
   public async searchForVisualForcePageAndExtractLocally() {
-    const connection = await this.establishConnection(l('SalesforceListingApex'));
+    const connection = await this.establishConnection();
     const visualForcePageAPI = new SalesforceVisualforcePageAPI(connection);
     const allRecords = await visualForcePageAPI.listAllRessources();
     const selected = await this.selectValueFromQuickPick(allRecords, 'Name');
@@ -103,7 +103,7 @@ export class SalesforceAPI {
   }
 
   public async searchForApexComponentAndExtractLocally() {
-    const connection = await this.establishConnection(l('SalesforceListingApex'));
+    const connection = await this.establishConnection();
     const salesforceApexComponentAPI = new SalesforceApexComponentAPI(connection);
     const allRecords = await salesforceApexComponentAPI.listAllRessources();
     const selected = await this.selectValueFromQuickPick(allRecords, 'Name');
@@ -155,7 +155,7 @@ export class SalesforceAPI {
     let processUpload: Promise<UploadToSalesforceResults> | null = null;
 
     if (componentName && componentType && content) {
-      const connection = await this.establishConnection(l('SalesforceUploadProgress'));
+      const connection = await this.establishConnection();
       const cleanedUpName = componentName.replace(/[^a-zA-Z0-9]/g, '');
 
       switch (componentType) {
@@ -177,6 +177,7 @@ export class SalesforceAPI {
               content: new Buffer(content).toString('base64')
             });
             processUpload = upsertResult;
+            vscode.window.setStatusBarMessage(l('SalesforceUploadProgress'), upsertResult);
             const upsert: IMedataUpsertResult = await upsertResult;
             this.handleUpsertResultErrors(upsert);
           }
@@ -196,7 +197,7 @@ export class SalesforceAPI {
     name: string,
     allRecords?: ISalesforceApexComponentRecord[]
   ): Promise<DownloadAndExtractionResult> {
-    const connection = await this.establishConnection(l('SalesforceConnection'));
+    const connection = await this.establishConnection();
     const visualForceAPI = new SalesforceVisualforcePageAPI(connection);
     if (!allRecords) {
       allRecords = await visualForceAPI.listAllRessources();
@@ -212,7 +213,7 @@ export class SalesforceAPI {
     name: string,
     allRecords?: ISalesforceApexComponentRecord[]
   ): Promise<DownloadAndExtractionResult> {
-    const connection = await this.establishConnection(l('SalesforceConnection'));
+    const connection = await this.establishConnection();
     const apexAPI = new SalesforceApexComponentAPI(connection);
     if (!allRecords) {
       allRecords = await apexAPI.listAllRessources();
@@ -225,7 +226,7 @@ export class SalesforceAPI {
   }
 
   private async downloadAndExtractStaticResourceByRecord(resourceRecord: any): Promise<DownloadAndExtractionResult> {
-    const connection = await this.establishConnection(l('SalesforceDownloadProgress'));
+    const connection = await this.establishConnection();
     const salesforceStaticResourceAPI = new SalesforceStaticResourceAPI(connection);
     const staticResourceData = await salesforceStaticResourceAPI.downloadResource(resourceRecord);
     const outcome = await salesforceStaticResourceAPI.extractLocally(resourceRecord, staticResourceData, this);
@@ -237,7 +238,7 @@ export class SalesforceAPI {
     allRecords?: ISalesforceStaticResourceRecord[]
   ): Promise<DownloadAndExtractionResult> {
     if (!allRecords) {
-      const connection = await this.establishConnection(l('SalesforceConnection'));
+      const connection = await this.establishConnection();
       allRecords = await new SalesforceStaticResourceAPI(connection).listAllRessources();
     }
     const match = _.find(allRecords, record => record.Name == name);
@@ -251,7 +252,7 @@ export class SalesforceAPI {
     name: string,
     allRecords?: ISalesforceAuraDefinitionBundle[]
   ) {
-    const connection = await this.establishConnection(l('SalesforceListingAura'));
+    const connection = await this.establishConnection();
     const auraAPI = new SalesforceAuraAPI(connection);
     if (!allRecords) {
       allRecords = await auraAPI.listAllRessources();
@@ -264,22 +265,9 @@ export class SalesforceAPI {
     return null;
   }
 
-  private async establishConnection(
-    messageFeedback: string,
-    progressStatus?: (reporter: vscode.Progress<any>, connection: ConnectionExtends) => void
-  ) {
-    const connection = <ConnectionExtends>await this.salesforceConnection.login();
-    vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Window,
-        title: l('SalesforceConnection')
-      },
-      async progress => {
-        progress.report({ message: messageFeedback });
-        progressStatus ? progressStatus(progress, connection) : null;
-      }
-    );
-    return connection;
+  private async establishConnection() {
+    const connection = this.salesforceConnection.login();
+    return <ConnectionExtends>await connection;
   }
 
   private async uploadSingleStaticResource(fullName: string, content: string, connection: ConnectionExtends) {
@@ -290,7 +278,7 @@ export class SalesforceAPI {
 
     if (match && match.contentType) {
       const contentType = match.contentType;
-      const upsert = await connection.metadata.upsert(
+      const upsert = connection.metadata.upsert(
         this.fromApexResourceTypeToMetadataAPIName(SalesforceResourceType.STATIC_RESOURCE_SIMPLE),
         {
           fullName,
@@ -299,8 +287,9 @@ export class SalesforceAPI {
           cacheControl: 'Public'
         }
       );
-      this.handleUpsertResultErrors(upsert);
-      return upsert;
+      vscode.window.setStatusBarMessage(l('SalesforceUploadProgress'), upsert);
+      this.handleUpsertResultErrors(await upsert);
+      return await upsert;
     }
     return null;
   }
@@ -312,24 +301,26 @@ export class SalesforceAPI {
   ) {
     const contentType = 'application/zip';
     const { buffer, resourceName } = await SalesforceStaticFolder.zip(filePath.fsPath);
-    const upsert = await connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
+    const upsert = connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
       fullName: resourceName,
       contentType,
       content: buffer.toString('base64'),
       cacheControl: 'Public'
     });
-    this.handleUpsertResultErrors(upsert);
-    return upsert;
+    vscode.window.setStatusBarMessage(l('SalesforceUploadProgress'), upsert);
+    this.handleUpsertResultErrors(await upsert);
+    return await upsert;
   }
 
   private async uploadAuraDefinitionBundle(filePath: vscode.Uri, fullName: string, connection: ConnectionExtends) {
     const uploadData = await new SalesforceAura().getMetadataForUpload(filePath);
-    const upsert = await connection.metadata.upsert('AuraDefinitionBundle', {
+    const upsert = connection.metadata.upsert('AuraDefinitionBundle', {
       fullName,
       ...uploadData
     });
-    this.handleUpsertResultErrors(upsert);
-    return upsert;
+    vscode.window.setStatusBarMessage(l('SalesforceUploadProgress'), upsert);
+    this.handleUpsertResultErrors(await upsert);
+    return await upsert;
   }
 
   private fromApexResourceTypeToMetadataAPIName(type: SalesforceResourceType): string {

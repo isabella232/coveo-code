@@ -27,6 +27,8 @@
 	"SalesforceConnecting": "Connecting to your salesforce organization...",
 	"SalesforceListingApex": "Listing Apex components...",
 	"SalesforceListingLightning": "Listing Lightning components...",
+	"SalesforceListingStaticResources": "Listing Static Resources...",
+	"SalesforceDownloading": "Downloading...",
 	"SalesforceChooseList": "Choose a component from the list...",
 	"SalesforceUploadProgress": "Upload in progress...",
 	"SalesforceDownloadProgress": "Download in progress...",
@@ -34,5 +36,5 @@
 	"SalesforceInvalidLoginConfig": "Invalid salesforce login configuration",
 	"SalesforceMissingConfig": "Missing configuration for coveocode.salesforce.organization.%s",
 	"SaleforceConnecting": "SaleforceConnecting",
-	"SalesforceListingAura": "SalesforceListingAura"
+	"SaleforceConnection": "SaleforceConnection"
 }

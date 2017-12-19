@@ -4,18 +4,19 @@ import { SalesforceResourceType } from '../filetypes/filetypesConverter';
 import { SalesforceLocalFileManager, DiffResult } from './salesforceLocalFileManager';
 import * as vscode from 'vscode';
 import { ISalesforceApexComponentRecord } from './salesforceApexComponentAPI';
+import { l } from '../strings/Strings';
 
 export class SalesforceVisualforcePageAPI implements ISalesforceResourceAPI {
   public constructor(public connection: ConnectionExtends) {}
 
   public async listAllRessources() {
-    const allRecords: ISalesforceApexComponentRecord[] = await this.connection
+    const allRecords: Promise<ISalesforceApexComponentRecord[]> = this.connection
       .sobject('ApexPage')
       .find({})
       .execute({ autoFetch: true })
       .then((records: ISalesforceApexComponentRecord[]) => records);
-
-    return allRecords;
+    vscode.window.setStatusBarMessage(l('SalesforceListingApex'), allRecords);
+    return await allRecords;
   }
 
   public async extract(record: ISalesforceApexComponentRecord, salesforceAPI: SalesforceAPI) {

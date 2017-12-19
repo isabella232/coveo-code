@@ -3,6 +3,8 @@ import { SalesforceResourceType, filetypesDefinition } from '../filetypes/filety
 import * as jsforce from 'jsforce';
 import * as _ from 'lodash';
 import { SalesforceAura } from './salesforceAuraFolder';
+import * as vscode from 'vscode';
+import { l } from '../strings/Strings';
 
 export interface ISalesforceAuraDefinitionBundle extends ISalesforceRecord {
   DeveloperName: string;
@@ -26,12 +28,14 @@ export class SalesforceAuraAPI implements ISalesforceResourceAPI {
     const recordSelected = _.find(allRecords, record => record.MasterLabel == name);
 
     if (recordSelected) {
-      const matchingAuraComponents: ISalesforceAuraDefinition[] = await this.connection
+      const fetchAuraComponent = this.connection
         .sobject('AuraDefinition')
         .find({ AuraDefinitionBundleId: recordSelected.Id })
         .execute({ autoFetch: true })
         .then((records: any) => records);
 
+      await vscode.window.setStatusBarMessage(l('SalesforceListingLightning'), fetchAuraComponent);
+      const matchingAuraComponents: ISalesforceAuraDefinition[] = await fetchAuraComponent;
       matchingAuraComponents.forEach(fileInBundle => {
         const salesforceResourceType = SalesforceAura.coerceApiNameToEnum(fileInBundle);
         const matchOnSalesforceResourceType = _.find(
@@ -56,10 +60,12 @@ export class SalesforceAuraAPI implements ISalesforceResourceAPI {
   }
 
   public async listAllRessources(): Promise<ISalesforceAuraDefinitionBundle[]> {
-    return await this.connection
+    const listAllRessources = this.connection
       .sobject('AuraDefinitionBundle')
       .find({})
       .execute({ autoFetch: true })
       .then((records: ISalesforceAuraDefinitionBundle[]) => records);
+    await vscode.window.setStatusBarMessage(l('SalesforceListingLightning'), listAllRessources);
+    return await listAllRessources;
   }
 }

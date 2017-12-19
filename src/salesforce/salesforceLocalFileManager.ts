@@ -9,6 +9,7 @@ import { SalesforceConfig } from './salesforceConfig';
 import { DiffContentStore } from '../diffContentStore';
 import { l } from '../strings/Strings';
 import { SalesforceResourcePreviewContentProvider } from './salesforceResourcePreviewContentProvider';
+import { SalesforceStaticFolder } from './salesforceStaticFolder';
 const parsePath = require('parse-filepath');
 
 export enum DiffResult {
@@ -20,9 +21,22 @@ export enum DiffResult {
 }
 
 export class SalesforceLocalFileManager {
-  public static getComponentNameFromFilePath(filePath: string): string | undefined {
+  public static getComponentNameFromFilePath(filePath: string): string | null {
     const parsedPath: any = parsePath(filePath);
-    return parsedPath.name.replace('_unzip', '');
+    const componentType = SalesforceLocalFileManager.getResourceTypeFromFilePath(filePath);
+    switch (componentType) {
+      case SalesforceResourceType.STATIC_RESOURCE_INSIDE_UNZIP:
+      case SalesforceResourceType.STATIC_RESOURCE_FOLDER:
+      case SalesforceResourceType.STATIC_RESOURCE_FOLDER_UNZIP:
+        const info = SalesforceStaticFolder.extractResourceInfoForFileInsizeZip(filePath);
+        if (info) {
+          return info.resourceName;
+        } else {
+          return null;
+        }
+      default:
+        return parsedPath.name.replace('_unzip', '');
+    }
   }
 
   public static diffComponentWithLocalVersion(

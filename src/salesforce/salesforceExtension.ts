@@ -2,12 +2,10 @@ import * as vscode from 'vscode';
 import { SalesforceResourcePreviewContentProvider } from './salesforceResourcePreviewContentProvider';
 import { VisualforceFormattingProvider } from '../provider/visualforceFormattingProvider';
 import { SalesforceAPI, SalesforceResourceLocation } from './salesforceAPI';
-import { SalesforceLocalFileManager, DiffResult } from './salesforceLocalFileManager';
+import { SalesforceLocalFileManager } from './salesforceLocalFileManager';
 import { l } from '../strings/Strings';
 import { DiffContentStore } from '../diffContentStore';
 import { SalesforceConfig } from './salesforceConfig';
-import { SalesforceResourceType } from '../filetypes/filetypesConverter';
-import { ISalesforceApexComponentRecord } from './salesforceApexComponentAPI';
 
 export const config = new SalesforceConfig();
 export const salesforceAPI = new SalesforceAPI(config);
@@ -69,30 +67,7 @@ const provideCommandToUploadApexToSalesforce = () => {
     if (!uri.fsPath && vscode.window.activeTextEditor) {
       uri = vscode.window.activeTextEditor.document.uri;
     }
-    const componentName = SalesforceLocalFileManager.getComponentNameFromFilePath(uri.fsPath);
-    const componentType = SalesforceLocalFileManager.getResourceTypeFromFilePath(uri.fsPath);
-    const content = SalesforceLocalFileManager.getContentOfFileLocally(uri.fsPath);
-    const showErrorFeedback = (message: string, statusCode: string) => {
-      vscode.window.showErrorMessage(`Message: ${message}`);
-      vscode.window.showErrorMessage(`Status code: ${statusCode}`);
-    };
-
-    if (componentName && componentType) {
-      try {
-        const metadataUpsertResult = await salesforceAPI.uploadByName(componentName, componentType, content, uri);
-        if (metadataUpsertResult.success) {
-          vscode.window.showInformationMessage(
-            l('SalesforceUploadSuccess', componentType, metadataUpsertResult.fullName)
-          );
-        } else {
-          showErrorFeedback(metadataUpsertResult.errors.message, metadataUpsertResult.errors.statusCode);
-        }
-      } catch (err) {
-        showErrorFeedback(err.message, err.statusCode);
-      }
-    } else {
-      showErrorFeedback(l('InvalidUriScheme'), uri.toString());
-    }
+    return await salesforceAPI.uploadFromLocalPath(uri);
   });
 };
 
@@ -101,14 +76,7 @@ const provideCommandToDownloadApexFromSalesforce = () => {
     if (!uri.fsPath && vscode.window.activeTextEditor) {
       uri = vscode.window.activeTextEditor.document.uri;
     }
-    const componentName = SalesforceLocalFileManager.getComponentNameFromFilePath(uri.fsPath);
-    const componentType = SalesforceLocalFileManager.getResourceTypeFromFilePath(uri.fsPath);
-
-    if (!componentName || !componentType) {
-      return Promise.reject(l('InvalidUriScheme', uri.toString()));
-    }
-
-    return salesforceAPI.downloadByName(componentName, componentType, uri);
+    return await salesforceAPI.downloadFromLocalPath(uri);
   });
 };
 

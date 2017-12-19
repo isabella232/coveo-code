@@ -7,6 +7,7 @@ import * as path from 'path';
 import * as bluebird from 'bluebird';
 import * as _ from 'lodash';
 import { ISalesforceAuraDefinition } from './salesforceAuraAPI';
+import { DownloadAndExtractionResult } from './salesforceAPI';
 const parsepath = require('parse-filepath');
 const readdir = bluebird.promisify(fs.readdir);
 const readfile = bluebird.promisify(fs.readFile);
@@ -16,8 +17,12 @@ export class SalesforceAura {
     return SalesforceResourceType[`AURA_${bundleFile.DefType}` as any] as SalesforceResourceType;
   }
 
-  public static async extract(name: string, bundle: ISalesforceAuraDefinition[], config: SalesforceConfig) {
-    return await bundle.map(async fileInBundle => {
+  public static async extract(
+    name: string,
+    bundle: ISalesforceAuraDefinition[],
+    config: SalesforceConfig
+  ): Promise<DownloadAndExtractionResult> {
+    const results = bundle.map(async fileInBundle => {
       const standardPath = SalesforceLocalFileManager.getStandardPathOfFileLocally(
         name,
         SalesforceAura.coerceApiNameToEnum(fileInBundle),
@@ -32,12 +37,18 @@ export class SalesforceAura {
           standardPath
         );
         if (outcome == DiffResult.FILE_DOES_NOT_EXIST_LOCALLY) {
-          return SalesforceLocalFileManager.saveFile(baseName, fileInBundle.Source, standardPath);
+          await SalesforceLocalFileManager.saveFile(baseName, fileInBundle.Source, standardPath);
         }
+        return outcome;
       }
-
       return null;
     });
+    const allResolved = await Promise.all(results);
+    const first = _.first(allResolved);
+    if (first) {
+      return <DiffResult>first;
+    }
+    return null;
   }
 
   public async getMetadataForUpload(uri: vscode.Uri) {

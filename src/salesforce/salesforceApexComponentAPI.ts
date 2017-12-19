@@ -36,6 +36,7 @@ export class SalesforceApexComponentAPI implements ISalesforceResourceAPI {
       SalesforceResourceType.APEX_COMPONENT,
       salesforceAPI.config
     );
+
     const path = SalesforceLocalFileManager.getStandardPathOfFileLocally(
       record.Name,
       SalesforceResourceType.APEX_COMPONENT,

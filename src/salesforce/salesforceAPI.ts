@@ -1,17 +1,16 @@
 import * as vscode from 'vscode';
 import * as _ from 'lodash';
-import * as jsforceextension from '../definitions/jsforce';
 import { SalesforceResourcePreviewContentProvider } from './salesforceResourcePreviewContentProvider';
 import { DiffContentStore } from '../diffContentStore';
 import { l } from '../strings/Strings';
 import { SalesforceConnection } from './salesforceConnection';
 import { SalesforceStaticFolder, ExtractFolderResult } from './salesforceStaticFolder';
-import { DiffResult } from './salesforceLocalFileManager';
+import { DiffResult, SalesforceLocalFileManager } from './salesforceLocalFileManager';
 import { SalesforceStaticResourceAPI, ISalesforceStaticResourceRecord } from './salesforceStaticResourceAPI';
 import { SalesforceConfig } from './salesforceConfig';
 import { SalesforceAura } from './salesforceAuraFolder';
 import { filetypesDefinition, SalesforceResourceType } from '../filetypes/filetypesConverter';
-import { ConnectionExtends } from '../definitions/jsforce';
+import { ConnectionExtends, IMedataUpsertResult } from '../definitions/jsforce';
 import { SalesforceAuraAPI, ISalesforceAuraDefinitionBundle } from './salesforceAuraAPI';
 import { SalesforceVisualforcePageAPI } from './salesforceVisualforcePageAPI';
 import { ISalesforceApexComponentRecord, SalesforceApexComponentAPI } from './salesforceApexComponentAPI';
@@ -19,6 +18,9 @@ import { ISalesforceApexComponentRecord, SalesforceApexComponentAPI } from './sa
 export interface ISalesforceResourceAPI {
   listAllRessources(): Promise<any>;
 }
+
+export type DownloadAndExtractionResult = DiffResult | ExtractFolderResult | null | undefined;
+export type UploadToSalesforceResults = IMedataUpsertResult | null | undefined;
 
 export interface ISalesforceRecord {
   Id: string;
@@ -69,7 +71,7 @@ export class SalesforceAPI {
     const allRecords = await auraAPI.listAllRessources();
     const selected = await this.selectValueFromQuickPick(allRecords, 'MasterLabel');
     if (selected) {
-      await this.downloadAndExtractLightningComponent(selected, allRecords);
+      await this.downloadAndExtractLightningComponentByName(selected, allRecords);
       return await vscode.window.showInformationMessage(l('SalesforceDownloadSuccess', selected));
     }
     return null;
@@ -107,15 +109,119 @@ export class SalesforceAPI {
     const selected = await this.selectValueFromQuickPick(allRecords, 'Name');
 
     if (selected) {
-      await this.downloadAndExtractVisualForcePageByName(selected, allRecords);
+      await this.downloadAndExtractApexComponentByName(selected, allRecords);
       return await vscode.window.showInformationMessage(l('SalesforceDownloadSuccess', selected));
     }
     return null;
   }
 
-  public async downloadAndExtractStaticResourceByRecord(
-    resourceRecord: any
-  ): Promise<DiffResult | ExtractFolderResult | null> {
+  public async downloadFromLocalPath(uri: vscode.Uri) {
+    const componentName = SalesforceLocalFileManager.getComponentNameFromFilePath(uri.fsPath);
+    const componentType = SalesforceLocalFileManager.getResourceTypeFromFilePath(uri.fsPath);
+    let processDownload: Promise<DownloadAndExtractionResult> | DownloadAndExtractionResult[] | null = null;
+    if (componentName && componentType) {
+      switch (componentType) {
+        case SalesforceResourceType.STATIC_RESOURCE_INSIDE_UNZIP:
+        case SalesforceResourceType.STATIC_RESOURCE_FOLDER:
+        case SalesforceResourceType.STATIC_RESOURCE_FOLDER_UNZIP:
+        case SalesforceResourceType.STATIC_RESOURCE_SIMPLE:
+          processDownload = this.downloadAndExtractStaticResourceByName(componentName);
+          break;
+        case SalesforceResourceType.APEX_COMPONENT:
+          processDownload = this.downloadAndExtractApexComponentByName(componentName);
+          break;
+        case SalesforceResourceType.APEX_PAGE:
+          processDownload = this.downloadAndExtractVisualForcePageByName(componentName);
+          break;
+        default:
+          if (componentType.indexOf('Aura') != -1) {
+            processDownload = this.downloadAndExtractLightningComponentByName(name);
+          }
+      }
+    }
+    const outcome = await processDownload;
+    if (outcome == null || outcome == undefined) {
+      await vscode.window.showErrorMessage(l('SalesforceErrorWhileDownloading'));
+    } else {
+      await vscode.window.showInformationMessage(l('SalesforceDownloadSuccess', componentName));
+    }
+    return outcome;
+  }
+
+  public async uploadFromLocalPath(uri: vscode.Uri) {
+    const componentName = SalesforceLocalFileManager.getComponentNameFromFilePath(uri.fsPath);
+    const componentType = SalesforceLocalFileManager.getResourceTypeFromFilePath(uri.fsPath);
+    const content = SalesforceLocalFileManager.getContentOfFileLocally(uri.fsPath);
+    let processUpload: Promise<UploadToSalesforceResults> | null = null;
+
+    if (componentName && componentType && content) {
+      const connection = await this.establishConnection(l('SalesforceUploadProgress'));
+      const cleanedUpName = componentName.replace(/[^a-zA-Z0-9]/g, '');
+
+      switch (componentType) {
+        case SalesforceResourceType.STATIC_RESOURCE_SIMPLE:
+          processUpload = this.uploadSingleStaticResource(cleanedUpName, content, connection);
+          break;
+        case SalesforceResourceType.STATIC_RESOURCE_INSIDE_UNZIP:
+        case SalesforceResourceType.STATIC_RESOURCE_FOLDER_UNZIP:
+        case SalesforceResourceType.STATIC_RESOURCE_FOLDER:
+          processUpload = this.uploadFolderStaticResource(uri, componentType, connection);
+          break;
+        default:
+          if (componentType.indexOf('Aura') != -1) {
+            processUpload = this.uploadAuraDefinitionBundle(uri, cleanedUpName, connection);
+          } else {
+            processUpload = connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(componentType), {
+              fullName: cleanedUpName,
+              label: componentName,
+              content: new Buffer(content).toString('base64')
+            });
+          }
+      }
+    }
+
+    const outcome = await processUpload;
+    if (outcome == null || outcome == undefined) {
+      await vscode.window.showErrorMessage(l('SalesforceErrorWhileUploading'));
+    } else {
+      await vscode.window.showInformationMessage(l('SalesforceUploadSuccess', componentType, componentName));
+    }
+    return outcome;
+  }
+
+  private async downloadAndExtractVisualForcePageByName(
+    name: string,
+    allRecords?: ISalesforceApexComponentRecord[]
+  ): Promise<DownloadAndExtractionResult> {
+    const connection = await this.establishConnection(l('SalesforceConnection'));
+    const visualForceAPI = new SalesforceVisualforcePageAPI(connection);
+    if (!allRecords) {
+      allRecords = await visualForceAPI.listAllRessources();
+    }
+    const match = _.find(allRecords, record => record.Name == name);
+    if (match) {
+      return visualForceAPI.extract(match, this);
+    }
+    return null;
+  }
+
+  private async downloadAndExtractApexComponentByName(
+    name: string,
+    allRecords?: ISalesforceApexComponentRecord[]
+  ): Promise<DownloadAndExtractionResult> {
+    const connection = await this.establishConnection(l('SalesforceConnection'));
+    const apexAPI = new SalesforceApexComponentAPI(connection);
+    if (!allRecords) {
+      allRecords = await apexAPI.listAllRessources();
+    }
+    const match = _.find(allRecords, record => record.Name == name);
+    if (match) {
+      return apexAPI.extract(match, this);
+    }
+    return null;
+  }
+
+  private async downloadAndExtractStaticResourceByRecord(resourceRecord: any): Promise<DownloadAndExtractionResult> {
     const connection = await this.establishConnection(l('SalesforceDownloadProgress'));
     const salesforceStaticResourceAPI = new SalesforceStaticResourceAPI(connection);
     const staticResourceData = await salesforceStaticResourceAPI.downloadResource(resourceRecord);
@@ -123,7 +229,10 @@ export class SalesforceAPI {
     return outcome;
   }
 
-  public async downloadAndExtractStaticResourceByName(name: string, allRecords?: ISalesforceStaticResourceRecord[]) {
+  private async downloadAndExtractStaticResourceByName(
+    name: string,
+    allRecords?: ISalesforceStaticResourceRecord[]
+  ): Promise<DownloadAndExtractionResult> {
     if (!allRecords) {
       const connection = await this.establishConnection(l('SalesforceConnection'));
       allRecords = await new SalesforceStaticResourceAPI(connection).listAllRessources();
@@ -135,96 +244,21 @@ export class SalesforceAPI {
     return null;
   }
 
-  public async downloadAndExtractVisualForcePageByName(name: string, allRecords?: ISalesforceApexComponentRecord[]) {
-    const connection = await this.establishConnection(l('SalesforceConnection'));
-    const visualForceAPI = new SalesforceVisualforcePageAPI(connection);
+  private async downloadAndExtractLightningComponentByName(
+    name: string,
+    allRecords?: ISalesforceAuraDefinitionBundle[]
+  ) {
+    const connection = await this.establishConnection(l('SalesforceListingAura'));
+    const auraAPI = new SalesforceAuraAPI(connection);
     if (!allRecords) {
-      allRecords = await visualForceAPI.listAllRessources();
+      allRecords = await auraAPI.listAllRessources();
     }
-    const match = _.find(allRecords, record => record.Name == name);
-    if (match) {
-      visualForceAPI.extract(match, this);
+    const bundle = await auraAPI.retrieveLightningBundle(name, allRecords);
+    if (bundle) {
+      vscode.window.showInformationMessage(l('SalesforceDownloadSuccess', name));
+      return await SalesforceAura.extract(name, bundle, this.config);
     }
-  }
-
-  public async downloadAndExtractApexComponentByName(name: string, allRecords?: ISalesforceApexComponentRecord[]) {
-    const connection = await this.establishConnection(l('SalesforceConnection'));
-    const apexAPI = new SalesforceApexComponentAPI(connection);
-    if (!allRecords) {
-      allRecords = await apexAPI.listAllRessources();
-    }
-    const match = _.find(allRecords, record => record.Name == name);
-    if (match) {
-      apexAPI.extract(match, this);
-    }
-  }
-
-  public async downloadByName(componentName: string, type: SalesforceResourceType, uri: vscode.Uri) {
-    switch (type) {
-      case SalesforceResourceType.STATIC_RESOURCE_INSIDE_UNZIP:
-        this.downloadFolderStaticResource(uri);
-        break;
-      case SalesforceResourceType.STATIC_RESOURCE_SIMPLE:
-        this.downloadSingleStaticResource(componentName);
-        break;
-      default:
-        if (type.indexOf('Aura') != -1) {
-          this.downloadAndExtractLightningComponent(componentName);
-        } else {
-          /*ret = connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
-            fullName: cleanedUpName,
-            label: componentName,
-            content: new Buffer(content).toString('base64')
-          });*/
-        }
-    }
-    /*
-    if (!_.isEmpty(allRecords)) {
-      SalesforceAPI.saveComponentInDiffStore(
-        componentName,
-        type,
-        SalesforceResourceLocation.DIST,
-        allRecords[0].Markup
-      );
-      vscode.window.showInformationMessage(l('SalesforceDownloadSuccess', componentName));
-      return allRecords[0];
-    } else {
-      vscode.window.showErrorMessage(l('SalesforceComponentNotFound', componentName));
-      return Promise.reject(l('SalesforceComponentNotFound', componentName));
-    }*/
-  }
-
-  public async uploadByName(
-    componentName: string,
-    type: SalesforceResourceType,
-    content: any,
-    filePath: vscode.Uri
-  ): Promise<jsforceextension.IMedataUpsertResult> {
-    const connection = await this.establishConnection(l('SalesforceUploadProgress'));
-    const cleanedUpName = componentName.replace(/[^a-zA-Z0-9]/g, '');
-    let ret;
-    switch (type) {
-      case SalesforceResourceType.STATIC_RESOURCE_SIMPLE:
-        ret = this.uploadSingleStaticResource(cleanedUpName, content, connection);
-        break;
-      case SalesforceResourceType.STATIC_RESOURCE_INSIDE_UNZIP:
-      case SalesforceResourceType.STATIC_RESOURCE_FOLDER_UNZIP:
-      case SalesforceResourceType.STATIC_RESOURCE_FOLDER:
-        ret = this.uploadFolderStaticResource(filePath, type, connection);
-        break;
-      default:
-        if (type.indexOf('Aura') != -1) {
-          ret = this.uploadAuraDefinitionBundle(filePath, cleanedUpName, connection);
-        } else {
-          ret = connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
-            fullName: cleanedUpName,
-            label: componentName,
-            content: new Buffer(content).toString('base64')
-          });
-        }
-    }
-
-    return ret;
+    return null;
   }
 
   private async establishConnection(
@@ -242,33 +276,28 @@ export class SalesforceAPI {
         progressStatus ? progressStatus(progress, connection) : null;
       }
     );
-
     return connection;
   }
 
   private uploadSingleStaticResource(fullName: string, content: string, connection: ConnectionExtends) {
-    const contentType = _.find(
+    const match = _.find(
       filetypesDefinition,
       definition => definition.salesforceResourceType == SalesforceResourceType.STATIC_RESOURCE_SIMPLE
     );
-    return connection.metadata.upsert(
-      this.fromApexResourceTypeToMetadataAPIName(SalesforceResourceType.STATIC_RESOURCE_SIMPLE),
-      {
-        fullName,
-        contentType,
-        content: new Buffer(content).toString('base64'),
-        cacheControl: 'Public'
-      }
-    );
-  }
 
-  private async downloadSingleStaticResource(name: string) {
-    const connection = await this.establishConnection(l('SalesforceListingApex'));
-    const salesforceStaticResourceAPI = new SalesforceStaticResourceAPI(connection);
-    const record = await salesforceStaticResourceAPI.getResourceRecordByName(name);
-    if (record) {
-      this.downloadAndExtractStaticResourceByRecord(record);
+    if (match && match.contentType) {
+      const contentType = match.contentType;
+      return connection.metadata.upsert(
+        this.fromApexResourceTypeToMetadataAPIName(SalesforceResourceType.STATIC_RESOURCE_SIMPLE),
+        {
+          fullName,
+          contentType,
+          content: new Buffer(content).toString('base64'),
+          cacheControl: 'Public'
+        }
+      );
     }
+    return null;
   }
 
   private async uploadFolderStaticResource(
@@ -278,26 +307,12 @@ export class SalesforceAPI {
   ) {
     const contentType = 'application/zip';
     const { buffer, resourceName } = await SalesforceStaticFolder.zip(filePath.fsPath);
-
     return connection.metadata.upsert(this.fromApexResourceTypeToMetadataAPIName(type), {
       fullName: resourceName,
       contentType,
       content: buffer.toString('base64'),
       cacheControl: 'Public'
     });
-  }
-
-  private async downloadFolderStaticResource(uri: vscode.Uri) {
-    const connection = await this.establishConnection(l('SalesforceListingApex'));
-    const salesforceStaticResourceAPI = new SalesforceStaticResourceAPI(connection);
-    const info = SalesforceStaticFolder.extractResourceInfoForFileInsizeZip(uri.fsPath);
-
-    if (info) {
-      const record = await salesforceStaticResourceAPI.getResourceRecordByName(info.resourceName);
-      if (record) {
-        this.downloadAndExtractStaticResourceByRecord(record);
-      }
-    }
   }
 
   private async uploadAuraDefinitionBundle(filePath: vscode.Uri, fullName: string, connection: ConnectionExtends) {
@@ -330,18 +345,5 @@ export class SalesforceAPI {
       matchOnDetail: true,
       matchOnDescription: true
     });
-  }
-
-  private async downloadAndExtractLightningComponent(name: string, allRecords?: ISalesforceAuraDefinitionBundle[]) {
-    const connection = await this.establishConnection(l('SalesforceListingAura'));
-    const auraAPI = new SalesforceAuraAPI(connection);
-    if (!allRecords) {
-      allRecords = await auraAPI.listAllRessources();
-    }
-    const bundle = await auraAPI.retrieveLightningBundle(name, allRecords);
-    if (bundle) {
-      vscode.window.showInformationMessage(l('SalesforceDownloadSuccess', name));
-      await SalesforceAura.extract(name, bundle, this.config);
-    }
   }
 }

@@ -112,9 +112,8 @@ export class SalesforceStaticResourceAPI {
           const doc = await vscode.workspace.openTextDocument(defaultPath);
           await vscode.window.showTextDocument(doc);
         }
-        return Promise.resolve(outcome);
       }
-      return null;
+      return Promise.resolve(outcome);
     }
   }
 }

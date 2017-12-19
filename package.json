@@ -189,176 +189,40 @@
                 },
                 {
                     "command": "coveo.takeLocal",
-                    "when": "editorLangId == visualforce && textCompareEditorVisible"
-                },
-                {
-                    "command": "coveo.takeLocal",
-                    "when": "editorLangId == css && textCompareEditorVisible"
-                },
-                {
-                    "command": "coveo.takeLocal",
-                    "when": "editorLangId == javascript && textCompareEditorVisible"
-                },
-                {
-                    "command": "coveo.takeLocal",
-                    "when": "editorLangId == html && textCompareEditorVisible"
-                },
-                {
-                    "command": "coveo.takeLocal",
-                    "when": "editorLangId == xml && textCompareEditorVisible"
+                    "when": "textCompareEditorVisible"
                 },
                 {
                     "command": "coveo.takeRemote",
-                    "when": "editorLangId == visualforce && textCompareEditorVisible"
-                },
-                {
-                    "command": "coveo.takeRemote",
-                    "when": "editorLangId == css && textCompareEditorVisible"
-                },
-                {
-                    "command": "coveo.takeRemote",
-                    "when": "editorLangId == javascript && textCompareEditorVisible"
-                },
-                {
-                    "command": "coveo.takeRemote",
-                    "when": "editorLangId == html && textCompareEditorVisible"
-                },
-                {
-                    "command": "coveo.takeRemote",
-                    "when": "editorLangId == xml && textCompareEditorVisible"
+                    "when": "textCompareEditorVisible"
                 },
                 {
                     "command": "coveo.upload",
-                    "when": "editorLangId == visualforce",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.upload",
-                    "when": "editorLangId == html",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.upload",
-                    "when": "editorLangId == css",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.upload",
-                    "when": "editorLangId == javascript",
                     "group": "navigation"
                 },
                 {
                     "command": "coveo.download",
-                    "when": "editorLangId == visualforce",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.download",
-                    "when": "editorLangId == html",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.download",
-                    "when": "editorLangId == css",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.download",
-                    "when": "editorLangId == javascript",
                     "group": "navigation"
                 }
             ],
             "editor/title": [
                 {
                     "command": "coveo.takeLocal",
-                    "when": "editorLangId == visualforce && textCompareEditorVisible",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.takeLocal",
-                    "when": "editorLangId == css && textCompareEditorVisible",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.takeLocal",
-                    "when": "editorLangId == javascript && textCompareEditorVisible",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.takeLocal",
-                    "when": "editorLangId == html && textCompareEditorVisible",
+                    "when": "textCompareEditorVisible",
                     "group": "navigation"
                 },
                 {
                     "command": "coveo.takeRemote",
-                    "when": "editorLangId == visualforce && textCompareEditorVisible",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.takeRemote",
-                    "when": "editorLangId == css && textCompareEditorVisible",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.takeRemote",
-                    "when": "editorLangId == javascript && textCompareEditorVisible",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.takeRemote",
-                    "when": "editorLangId == html && textCompareEditorVisible",
+                    "when": "textCompareEditorVisible",
                     "group": "navigation"
                 },
                 {
                     "command": "coveo.upload",
-                    "when": "editorLangId == visualforce && !textCompareEditorVisible",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.upload",
-                    "when": "editorLangId == html && !textCompareEditorVisible",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.upload",
-                    "when": "editorLangId == javascript && !textCompareEditorVisible",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.upload",
-                    "when": "editorLangId == css && !textCompareEditorVisible",
+                    "when": "!textCompareEditorVisible",
                     "group": "navigation"
                 },
                 {
                     "command": "coveo.download",
-                    "when": "editorLangId == visualforce && !textCompareEditorVisible",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.download",
-                    "when": "editorLangId == html && !textCompareEditorVisible",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.download",
-                    "when": "editorLangId == javascript && !textCompareEditorVisible",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.download",
-                    "when": "editorLangId == css && !textCompareEditorVisible",
-                    "group": "navigation"
-                }
-            ],
-            "explorer/context": [
-                {
-                    "command": "coveo.upload",
-                    "when": "explorerResourceIsFolder",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.download",
-                    "when": "explorerResourceIsFolder",
+                    "when": "!textCompareEditorVisible",
                     "group": "navigation"
                 }
             ]

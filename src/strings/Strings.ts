@@ -28,6 +28,8 @@ const i18ninstance = new i18n({
       SalesforceUploadSuccess: 'Resource succesfully uploaded to Salesforce as type: %s with the name: %s',
       SalesforceDownloadSuccess: 'Resource succesfully downloaded from Salesforce: %s',
       SalesforceComponentNotFound: 'Component not found in your salesforce organization : %s',
+      SalesforceErrorWhileDownloading: 'An error happened while downloading from Salesforce',
+      SalesforceErrorWhileUploading: 'An error happened while uploading to Salesforce',
       SalesforceConnection: 'Salesforce connection',
       SalesforceConnecting: 'Connecting to your salesforce organization...',
       SalesforceListingApex: 'Listing Apex components...',

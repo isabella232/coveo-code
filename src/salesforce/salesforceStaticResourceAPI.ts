@@ -1,14 +1,20 @@
 import * as zlib from 'zlib';
 import { PassThrough } from 'stream';
 import { ConnectionExtends } from '../definitions/jsforce';
-import { ISalesforceStaticResourceRecord, SalesforceAPI, SalesforceResourceLocation } from './salesforceAPI';
+import { SalesforceAPI, SalesforceResourceLocation } from './salesforceAPI';
 import * as _ from 'lodash';
 import * as vscode from 'vscode';
 import { SalesforceResourceType } from '../filetypes/filetypesConverter';
 import { SalesforceLocalFileManager, DiffResult } from './salesforceLocalFileManager';
 import { Gunzip } from 'zlib';
 import { SalesforceStaticFolder } from './salesforceStaticFolder';
+import { ISalesforceApexComponentRecord } from './salesforceApexComponentAPI';
 const fetch = require('node-fetch');
+
+export interface ISalesforceStaticResourceRecord extends ISalesforceApexComponentRecord {
+  Body: string;
+  ContentType: string;
+}
 
 export class SalesforceStaticResourceAPI {
   public constructor(public connection: ConnectionExtends) {}

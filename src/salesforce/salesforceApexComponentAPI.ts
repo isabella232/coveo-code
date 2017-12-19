@@ -1,16 +1,21 @@
-import { ConnectionExtends } from '../definitions/jsforce';
 import { ISalesforceResourceAPI, SalesforceAPI, SalesforceResourceLocation } from './salesforceAPI';
+import { ConnectionExtends } from '../definitions/jsforce';
 import { SalesforceResourceType } from '../filetypes/filetypesConverter';
 import { SalesforceLocalFileManager, DiffResult } from './salesforceLocalFileManager';
 import * as vscode from 'vscode';
-import { ISalesforceApexComponentRecord } from './salesforceApexComponentAPI';
 
-export class SalesforceVisualforcePageAPI implements ISalesforceResourceAPI {
+export interface ISalesforceApexComponentRecord {
+  Name: string;
+  Markup: string;
+  ContentType?: string;
+}
+
+export class SalesforceApexComponentAPI implements ISalesforceResourceAPI {
   public constructor(public connection: ConnectionExtends) {}
 
   public async listAllRessources() {
     const allRecords: ISalesforceApexComponentRecord[] = await this.connection
-      .sobject('ApexPage')
+      .sobject('ApexComponent')
       .find({})
       .execute({ autoFetch: true })
       .then((records: ISalesforceApexComponentRecord[]) => records);
@@ -21,19 +26,19 @@ export class SalesforceVisualforcePageAPI implements ISalesforceResourceAPI {
   public async extract(record: ISalesforceApexComponentRecord, salesforceAPI: SalesforceAPI) {
     SalesforceAPI.saveComponentInDiffStore(
       record.Name,
-      SalesforceResourceType.APEX_PAGE,
+      SalesforceResourceType.APEX_COMPONENT,
       SalesforceResourceLocation.DIST,
       record.Markup
     );
 
     const outcome = await SalesforceLocalFileManager.diffComponentWithLocalVersion(
       record.Name,
-      SalesforceResourceType.APEX_PAGE,
+      SalesforceResourceType.APEX_COMPONENT,
       salesforceAPI.config
     );
     const path = SalesforceLocalFileManager.getStandardPathOfFileLocally(
       record.Name,
-      SalesforceResourceType.APEX_PAGE,
+      SalesforceResourceType.APEX_COMPONENT,
       salesforceAPI.config
     );
 

@@ -1,12 +1,13 @@
 import * as vscode from 'vscode';
 import { SalesforceResourcePreviewContentProvider } from './salesforceResourcePreviewContentProvider';
 import { VisualforceFormattingProvider } from '../provider/visualforceFormattingProvider';
-import { ISalesforceApexComponentRecord, SalesforceAPI, SalesforceResourceLocation } from './salesforceAPI';
+import { SalesforceAPI, SalesforceResourceLocation } from './salesforceAPI';
 import { SalesforceLocalFileManager, DiffResult } from './salesforceLocalFileManager';
 import { l } from '../strings/Strings';
 import { DiffContentStore } from '../diffContentStore';
 import { SalesforceConfig } from './salesforceConfig';
 import { SalesforceResourceType } from '../filetypes/filetypesConverter';
+import { ISalesforceApexComponentRecord } from './salesforceApexComponentAPI';
 
 export const config = new SalesforceConfig();
 export const salesforceAPI = new SalesforceAPI(config);
@@ -39,63 +40,15 @@ const provideFormattingForVisualforce = (context: vscode.ExtensionContext) => {
   );
 };
 
-const afterRetrieve = async (
-  recordRetrieved: ISalesforceApexComponentRecord,
-  outcome: DiffResult,
-  type: SalesforceResourceType,
-  content?: string
-) => {
-  if (outcome == DiffResult.FILE_DOES_NOT_EXIST_LOCALLY) {
-    let contentType = '';
-    if (recordRetrieved.ContentType) {
-      contentType = recordRetrieved.ContentType;
-    }
-    if (!content) {
-      content = recordRetrieved.Markup;
-    }
-
-    const defaultPath = SalesforceLocalFileManager.getStandardPathOfFileLocally(
-      recordRetrieved.Name,
-      type,
-      config,
-      contentType
-    );
-    if (defaultPath) {
-      await SalesforceLocalFileManager.saveFile(recordRetrieved.Name, content, defaultPath);
-      const doc = await vscode.workspace.openTextDocument(defaultPath);
-      return vscode.window.showTextDocument(doc);
-    }
-  }
-  return Promise.resolve(undefined);
-};
-
 const provideCommandToRetrieveApexComponent = () => {
   vscode.commands.registerCommand('coveo.salesforce.retrieveApexComponent', async () => {
-    const recordRetrieved = await salesforceAPI.retrieveApexComponents();
-    if (recordRetrieved) {
-      return SalesforceLocalFileManager.diffComponentWithLocalVersion(
-        recordRetrieved.Name,
-        SalesforceResourceType.APEX_COMPONENT,
-        config
-      ).then(outcome => afterRetrieve(recordRetrieved, outcome, SalesforceResourceType.APEX_COMPONENT));
-    } else {
-      return undefined;
-    }
+    return await salesforceAPI.searchForApexComponentAndExtractLocally();
   });
 };
 
 const provideCommandToRetrieveApexPage = () => {
   vscode.commands.registerCommand('coveo.salesforce.retrieveApexPage', async () => {
-    const recordRetrieved = await salesforceAPI.searchForVisualForcePageAndExtractLocally();
-    if (recordRetrieved) {
-      return SalesforceLocalFileManager.diffComponentWithLocalVersion(
-        recordRetrieved.Name,
-        SalesforceResourceType.APEX_PAGE,
-        config
-      ).then(outcome => afterRetrieve(recordRetrieved, outcome, SalesforceResourceType.APEX_PAGE));
-    } else {
-      return undefined;
-    }
+    return await salesforceAPI.searchForVisualForcePageAndExtractLocally();
   });
 };
 

@@ -1,12 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as zlib from 'zlib';
-import { SalesforceAPI, ISalesforceApexComponentRecord, SalesforceResourceLocation } from './salesforceAPI';
+import { SalesforceAPI, SalesforceResourceLocation } from './salesforceAPI';
 import { PassThrough } from 'stream';
 import { l } from '../strings/Strings';
 import { SalesforceLocalFileManager, DiffResult } from './salesforceLocalFileManager';
 import { SalesforceConfig } from './salesforceConfig';
 import { SalesforceResourceType } from '../filetypes/filetypesConverter';
+import { ISalesforceApexComponentRecord } from './salesforceApexComponentAPI';
 const AdmZip = require('adm-zip');
 const archiver = require('archiver');
 const parsePath = require('parse-filepath');

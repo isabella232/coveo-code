@@ -7,13 +7,14 @@ import { l } from '../strings/Strings';
 import { SalesforceConnection } from './salesforceConnection';
 import { SalesforceStaticFolder, ExtractFolderResult } from './salesforceStaticFolder';
 import { DiffResult } from './salesforceLocalFileManager';
-import { SalesforceStaticResourceAPI } from './salesforceStaticResourceAPI';
+import { SalesforceStaticResourceAPI, ISalesforceStaticResourceRecord } from './salesforceStaticResourceAPI';
 import { SalesforceConfig } from './salesforceConfig';
 import { SalesforceAura } from './salesforceAuraFolder';
 import { filetypesDefinition, SalesforceResourceType } from '../filetypes/filetypesConverter';
 import { ConnectionExtends } from '../definitions/jsforce';
 import { SalesforceAuraAPI, ISalesforceAuraDefinitionBundle } from './salesforceAuraAPI';
 import { SalesforceVisualforcePageAPI } from './salesforceVisualforcePageAPI';
+import { ISalesforceApexComponentRecord, SalesforceApexComponentAPI } from './salesforceApexComponentAPI';
 
 export interface ISalesforceResourceAPI {
   listAllRessources(): Promise<any>;
@@ -28,21 +29,6 @@ export interface ISalesforceRecord {
   };
   CreatedDate: string;
   LastModifiedDate: string;
-}
-export interface ISalesforceApexComponentRecord {
-  Name: string;
-  Markup: string;
-  ContentType?: string;
-}
-
-export interface ISalesforceStaticResourceRecord extends ISalesforceApexComponentRecord {
-  Body: string;
-  ContentType: string;
-}
-
-export interface ISalesforceApexPageRecord {
-  label: string;
-  content: string;
 }
 
 export enum SalesforceResourceLocation {
@@ -83,7 +69,8 @@ export class SalesforceAPI {
     const allRecords = await auraAPI.listAllRessources();
     const selected = await this.selectValueFromQuickPick(allRecords, 'MasterLabel');
     if (selected) {
-      return await this.downloadAndExtractLightningComponent(selected, allRecords);
+      await this.downloadAndExtractLightningComponent(selected, allRecords);
+      return await vscode.window.showInformationMessage(l('SalesforceDownloadSuccess', selected));
     }
     return null;
   }
@@ -94,63 +81,34 @@ export class SalesforceAPI {
     const selected = await this.selectValueFromQuickPick(allRecords, 'Name');
 
     if (selected) {
-      return await this.downloadAndExtractStaticResourceByName(selected, allRecords);
+      await this.downloadAndExtractStaticResourceByName(selected, allRecords);
+      return await vscode.window.showInformationMessage(l('SalesforceDownloadSuccess', selected));
     }
     return null;
   }
 
-  public async searchForVisualForcePageAndExtractLocally(): Promise<ISalesforceApexComponentRecord | null> {
+  public async searchForVisualForcePageAndExtractLocally() {
     const connection = await this.establishConnection(l('SalesforceListingApex'));
     const visualForcePageAPI = new SalesforceVisualforcePageAPI(connection);
     const allRecords = await visualForcePageAPI.listAllRessources();
     const selected = await this.selectValueFromQuickPick(allRecords, 'Name');
 
     if (selected) {
-      const recordSelected = _.find(allRecords, record => record.Name == selected);
-      if (recordSelected) {
-        SalesforceAPI.saveComponentInDiffStore(
-          recordSelected.Name,
-          SalesforceResourceType.APEX_PAGE,
-          SalesforceResourceLocation.DIST,
-          recordSelected.Markup
-        );
-        vscode.window.showInformationMessage(l('SalesforceDownloadSuccess', selected));
-        return recordSelected;
-      }
+      await this.downloadAndExtractVisualForcePageByName(selected, allRecords);
+      return await vscode.window.showInformationMessage(l('SalesforceDownloadSuccess', selected));
     }
     return null;
   }
 
-  public async retrieveApexComponents(): Promise<ISalesforceApexComponentRecord | null> {
+  public async searchForApexComponentAndExtractLocally() {
     const connection = await this.establishConnection(l('SalesforceListingApex'));
-
-    const allRecords: ISalesforceApexComponentRecord[] = await connection
-      .sobject('ApexComponent')
-      .find({})
-      .execute({ autoFetch: true })
-      .then((records: ISalesforceApexComponentRecord[]) => records);
-
-    const selected = await vscode.window.showQuickPick(_.map(allRecords, record => record.Name), {
-      ignoreFocusOut: true,
-      placeHolder: l('SalesforceSelectComponent'),
-      matchOnDetail: true,
-      matchOnDescription: true
-    });
+    const salesforceApexComponentAPI = new SalesforceApexComponentAPI(connection);
+    const allRecords = await salesforceApexComponentAPI.listAllRessources();
+    const selected = await this.selectValueFromQuickPick(allRecords, 'Name');
 
     if (selected) {
-      const recordSelected = _.find(allRecords, record => record.Name == selected);
-      if (recordSelected) {
-        DiffContentStore.add(
-          `${SalesforceAPI.getDiffStoreScheme(
-            recordSelected.Name,
-            SalesforceResourceType.APEX_COMPONENT,
-            SalesforceResourceLocation.DIST
-          )}`,
-          recordSelected.Markup
-        );
-        vscode.window.showInformationMessage(l('SalesforceDownloadSuccess', selected));
-        return recordSelected;
-      }
+      await this.downloadAndExtractVisualForcePageByName(selected, allRecords);
+      return await vscode.window.showInformationMessage(l('SalesforceDownloadSuccess', selected));
     }
     return null;
   }
@@ -178,11 +136,27 @@ export class SalesforceAPI {
   }
 
   public async downloadAndExtractVisualForcePageByName(name: string, allRecords?: ISalesforceApexComponentRecord[]) {
+    const connection = await this.establishConnection(l('SalesforceConnection'));
+    const visualForceAPI = new SalesforceVisualforcePageAPI(connection);
     if (!allRecords) {
-      const connection = await this.establishConnection(l('SalesforceConnection'));
-      allRecords = await new SalesforceVisualforcePageAPI(connection).listAllRessources();
+      allRecords = await visualForceAPI.listAllRessources();
     }
     const match = _.find(allRecords, record => record.Name == name);
+    if (match) {
+      visualForceAPI.extract(match, this);
+    }
+  }
+
+  public async downloadAndExtractApexComponentByName(name: string, allRecords?: ISalesforceApexComponentRecord[]) {
+    const connection = await this.establishConnection(l('SalesforceConnection'));
+    const apexAPI = new SalesforceApexComponentAPI(connection);
+    if (!allRecords) {
+      allRecords = await apexAPI.listAllRessources();
+    }
+    const match = _.find(allRecords, record => record.Name == name);
+    if (match) {
+      apexAPI.extract(match, this);
+    }
   }
 
   public async downloadByName(componentName: string, type: SalesforceResourceType, uri: vscode.Uri) {

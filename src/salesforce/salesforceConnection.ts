@@ -38,7 +38,7 @@ export class SalesforceConnection {
             const password = this.config.getPassword();
             const securityToken = this.config.getSecurityToken();
             if (username && password) {
-              progress.report({ message: l('SaleforceConnecting') });
+              progress.report({ message: l('SalesforceConnection') });
               await this.connection.login(username, password + securityToken);
               SalesforceConnection.validConnection = this.connection;
               return SalesforceConnection.validConnection;

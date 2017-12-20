@@ -74,7 +74,7 @@ export class SalesforceAura {
       ret[result.apiField] = result.buffer.toString('base64');
       const metadataType = this.mapResourceTypeToMetadataApiType(result.type);
       if (metadataType) {
-        ret['type'] = metadataType;
+        ret.type = metadataType;
       }
     });
     return ret;
@@ -119,7 +119,7 @@ export class SalesforceAura {
       case SalesforceResourceType.AURA_SVG:
         return 'SVGContent';
       default:
-        throw `Type not found in mapResourceTypeToMetadataApiField : ${type}`;
+        throw new Error(`Type not found in mapResourceTypeToMetadataApiField : ${type}`);
     }
   }
 }

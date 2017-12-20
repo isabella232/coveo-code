@@ -1,8 +1,0 @@
-{
-  ".source.visualforce": {
-    "Add a new result template for the Coveo Search UI": {
-      "prefix": "Coveo Result Template",
-      "body": "<script type='${1:templateType}' class='result-template' id='${2:id}' data-field-${3:fieldCondition}='${4:fieldConditionValue}'>\n\t<div>\n\t\t<a class='CoveoResultLink'></a>\n\t</div>\n</script>"
-    }
-  }
-}

@@ -121,7 +121,7 @@ export class SalesforceStaticFolder {
 
                 resolve(ExtractFolderResult.NEW_FOLDER);
               } else {
-                const allEntries: Promise<void | DiffResult | boolean>[] = zip.getEntries().map(entry => {
+                const allEntries: Array<Promise<void | DiffResult | boolean>> = zip.getEntries().map(entry => {
                   return this.extractSingleFile(entry, standardPathUnzip, config);
                 });
 

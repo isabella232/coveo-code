@@ -8,7 +8,9 @@ import {
   doCompleteScanOfCurrentSymbol,
   getResultTemplateAtPosition,
   getResultTemplateAttributeAtPosition,
-  IScanOfAttributeValue
+  IScanOfAttributeValue,
+  getResultTemplateComponentAtPosition,
+  getResultTemplateComponentOptionAtPosition
 } from '../documentService';
 import { ComponentOptionValues } from '../completionItems/componentOptionValues';
 import { ComponentOption } from '../completionItems/componentOption';
@@ -22,28 +24,74 @@ export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider
     position: vscode.Position,
     token: vscode.CancellationToken
   ): Thenable<vscode.CompletionItem[]> {
-    return new Promise<vscode.CompletionItem[]>((resolve, reject) => {
+    return new Promise<vscode.CompletionItem[]>(async (resolve, reject) => {
       let completionItems: vscode.CompletionItem[] = [];
-      const currentOption = getOptionAtPosition(this.referenceDocumentation, position, document);
-      const currentOptionInResultTemplate = getResultTemplateAttributeAtPosition(position, document);
-      const currentComponent = getComponentAtPosition(this.referenceDocumentation, position, document);
-      const currentResultTemplate = getResultTemplateAtPosition(position, document);
 
-      if (currentOption) {
-        completionItems = completionItems.concat(this.provideCompletionsForComponentOptionsValues(currentOption));
-      } else if (currentOptionInResultTemplate) {
+      const currentOptionComponentInsideResultTemplate = await getResultTemplateComponentOptionAtPosition(
+        this.referenceDocumentation,
+        position,
+        document
+      );
+      if (currentOptionComponentInsideResultTemplate) {
         completionItems = completionItems.concat(
-          this.provideCompletionsForResultTemplateAttribute(currentOptionInResultTemplate)
+          this.provideCompletionsForComponentOptionsValues(currentOptionComponentInsideResultTemplate)
         );
-      } else if (currentComponent) {
+        resolve(completionItems);
+        return;
+      }
+
+      const currentComponentInsideResultTemplate = await getResultTemplateComponentAtPosition(
+        this.referenceDocumentation,
+        position,
+        document
+      );
+      if (currentComponentInsideResultTemplate) {
+        completionItems = completionItems.concat(
+          this.provideCompletionCompletionsForComponentOptions(currentComponentInsideResultTemplate, position, document)
+        );
+        resolve(completionItems);
+        return;
+      }
+
+      const currentOptionForComponentOutsideOfResultTemplate = getOptionAtPosition(
+        this.referenceDocumentation,
+        position,
+        document
+      );
+      if (currentOptionForComponentOutsideOfResultTemplate) {
+        completionItems = completionItems.concat(
+          this.provideCompletionsForComponentOptionsValues(currentOptionForComponentOutsideOfResultTemplate)
+        );
+        resolve(completionItems);
+        return;
+      }
+
+      const currentOptionForResultTemplate = getResultTemplateAttributeAtPosition(position, document);
+      if (currentOptionForResultTemplate) {
+        completionItems = completionItems.concat(
+          this.provideCompletionsForResultTemplateAttribute(currentOptionForResultTemplate)
+        );
+        resolve(completionItems);
+        return;
+      }
+
+      const currentComponent = getComponentAtPosition(this.referenceDocumentation, position, document);
+      if (currentComponent) {
         completionItems = completionItems.concat(
           this.provideCompletionCompletionsForComponentOptions(currentComponent, position, document)
         );
-      } else if (currentResultTemplate) {
-        completionItems = completionItems.concat(this.provideCompletionsForResultTemplate());
-      } else {
-        // TODO completions on component names
+        resolve(completionItems);
+        return;
       }
+
+      const currentResultTemplate = getResultTemplateAtPosition(position, document);
+      if (currentResultTemplate) {
+        completionItems = completionItems.concat(this.provideCompletionsForResultTemplate());
+        resolve(completionItems);
+        return;
+      }
+
+      // TODO completions on component names
       resolve(completionItems);
     });
   }
@@ -73,20 +121,6 @@ export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider
       .map(option => new ComponentOption(option))
       .value();
   }
-
-  /*private provideCompletionsForComponentName(document: vscode.TextDocument, position: vscode.Position) {
-    const completions: vscode.CompletionItem[] = [];
-    const completeScan = doCompleteScanOfCurrentSymbol(document, position);
-    const classNameIsBeingCompleted = _.filter(
-      completeScan,
-      scan => scan.attributeName == 'class' && scan.activeUnderCursor
-    );
-    if (classNameIsBeingCompleted) {
-      // TODO need some manner to filter raw documentation to get valid components only
-      // Currently, the documentation also contains interface or generic classes which are not valid Coveo components
-    }
-    return completions;
-  }*/
 
   private provideCompletionsForResultTemplate() {
     return new ResultTemplate().getCompletionsForAttributes();

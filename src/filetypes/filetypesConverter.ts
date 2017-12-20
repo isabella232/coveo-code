@@ -98,7 +98,7 @@ export const filetypesDefinition: IFileTypeDefinition[] = [
     salesforceResourceType: SalesforceResourceType.STATIC_RESOURCE_INSIDE_UNZIP,
     subfolder: 'staticresources',
     metadataApiName: 'StaticResource',
-    matcher: path => path.indexOf('_unzip') != -1
+    matcher: filePath => filePath.indexOf('_unzip') != -1
   },
   {
     extension: 'app',
@@ -182,7 +182,7 @@ export const getExtensionFromTypeOrPath = (type: SalesforceResourceType, filePat
   ) {
     return parsePath(filePath).extname.replace(/\./, '');
   } else {
-    const definition = _.find(filetypesDefinition, definition => definition.salesforceResourceType == type);
+    const definition = _.find(filetypesDefinition, def => def.salesforceResourceType == type);
     if (definition) {
       return definition.extension;
     }

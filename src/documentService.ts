@@ -28,11 +28,27 @@ export function getComponentAtPosition(
   const htmlDoc = htmlLangService.parseHTMLDocument(transformedDoc);
   const symbols = _transformSymbols(<any>htmlLangService.findDocumentSymbols(transformedDoc, htmlDoc));
   const currentSymbol = _getCurrentSymbol(symbols, position);
-
   if (currentSymbol) {
     return referenceDocumentation.getDocumentation(currentSymbol);
   }
 
+  return undefined;
+}
+
+export async function getResultTemplateComponentAtPosition(
+  referenceDocumentation: ReferenceDocumentation,
+  position: vscode.Position,
+  document: vscode.TextDocument
+) {
+  const resultTemplateAtPosition = getResultTemplateAtPosition(position, document);
+  if (resultTemplateAtPosition) {
+    const { newDocument, newPosition } = await _transformDocAndPositionForResultTemplate(
+      resultTemplateAtPosition,
+      document,
+      position
+    );
+    return getComponentAtPosition(referenceDocumentation, newPosition, newDocument);
+  }
   return undefined;
 }
 
@@ -53,6 +69,38 @@ export function getResultTemplateAtPosition(
 
     if (currentTemplate) {
       return currentTemplate;
+    }
+  }
+
+  return undefined;
+}
+
+export async function getResultTemplateComponentOptionAtPosition(
+  referenceDocumentation: ReferenceDocumentation,
+  position: vscode.Position,
+  document: vscode.TextDocument
+) {
+  const resultTemplateAtPosition = getResultTemplateAtPosition(position, document);
+  const resultTemplateComponentAtPosition = await getResultTemplateComponentAtPosition(
+    referenceDocumentation,
+    position,
+    document
+  );
+  if (resultTemplateAtPosition && resultTemplateComponentAtPosition) {
+    const { newDocument, newPosition } = await _transformDocAndPositionForResultTemplate(
+      resultTemplateAtPosition,
+      document,
+      position
+    );
+    const currentActiveAttribute = _getScanOfActiveAttributeValue(newDocument, newPosition);
+
+    if (currentActiveAttribute) {
+      const optionThatMatch = _.find(
+        resultTemplateComponentAtPosition.options,
+        option => `${ReferenceDocumentation.camelCaseToHyphen(option.name)}` == currentActiveAttribute.attributeName
+      );
+
+      return optionThatMatch;
     }
   }
 
@@ -162,7 +210,7 @@ export function doCompleteScanOfSymbol(
 
   let cursorOffsetInSymbol = currentCursorOffset - currentSymbolOffset;
   const completeScanOfAttributeValues: IScanOfAttributeValue[] = [];
-  let doScan: any = scanner.scan();
+  scanner.scan();
 
   const shouldExitScan = () => {
     return (
@@ -179,10 +227,10 @@ export function doCompleteScanOfSymbol(
       let attributeValue = '';
       let activeUnderCursor = false;
 
-      doScan = scanner.scan();
+      scanner.scan();
 
       if (scanner.getTokenType() == TokenType.DelimiterAssign) {
-        doScan = scanner.scan();
+        scanner.scan();
 
         if (scanner.getTokenType() == TokenType.AttributeValue) {
           attributeValue = scanner.getTokenText().replace(/['"]/g, '');
@@ -215,7 +263,7 @@ export function doCompleteScanOfSymbol(
       completeScanOfAttributeValues.push(scanOfAttributeValues);
     }
 
-    doScan = scanner.scan();
+    scanner.scan();
   }
 
   return completeScanOfAttributeValues;
@@ -298,4 +346,19 @@ function _getScanOfActiveAttributeValue(
   position: vscode.Position
 ): IScanOfAttributeValue | undefined {
   return _.find(doCompleteScanOfCurrentSymbol(document, position), scan => scan.activeUnderCursor);
+}
+
+async function _transformDocAndPositionForResultTemplate(
+  resultTemplate: vscode.SymbolInformation,
+  document: vscode.TextDocument,
+  position: vscode.Position
+) {
+  const newDocument = await vscode.workspace.openTextDocument({
+    content: getContentOfTemplate(resultTemplate, document)
+  });
+  const newPosition = position.translate(-resultTemplate.location.range.start.line);
+  return {
+    newDocument,
+    newPosition
+  };
 }

@@ -226,17 +226,7 @@
                     "group": "navigation"
                 }
             ]
-        },
-        "snippets": [
-            {
-                "language": "html",
-                "path": "./snippets/coveo.html.json"
-            },
-            {
-                "language": "visualforce",
-                "path": "./snippets/coveo.visualforce.json"
-            }
-        ]
+        }
     },
     "main": "./out/src/extension",
     "scripts": {
@@ -249,19 +239,19 @@
         "docstore": "node buildDocumentationObject.js"
     },
     "devDependencies": {
+        "@types/bluebird": "^3.5.18",
         "@types/cheerio": "^0.22.2",
         "@types/html-to-text": "^1.4.30",
         "@types/jsforce": "^1.8.2",
         "@types/lodash": "^4.14.74",
         "@types/mocha": "^2.2.32",
         "@types/node-fetch": "^1.6.7",
-        "coveo-search-ui": "^2.2900.14",
+        "coveo-search-ui": "^2.3679.4",
         "mocha": "^2.3.3",
         "prettier": "^1.5.2",
         "tslint": "^5.5.0",
         "typescript": "^2.0.3",
-        "vscode": "^1.0.0",
-        "@types/bluebird": "^3.5.18"
+        "vscode": "^1.0.0"
     },
     "dependencies": {
         "adm-zip": "^0.4.7",

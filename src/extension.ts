@@ -17,14 +17,21 @@ export function activate(context: vscode.ExtensionContext) {
   provideContextMenu(context);
 
   let commandsAreHandled = false;
-  // Salesforce specific
-  if (salesforceConfig.doValidation(true)) {
-    registerSalesforceExtension(context);
-    commandsAreHandled = true;
-  } else if (salesforceConfig.configPartiallyExist()) {
-    salesforceConfig.doValidation(false);
-  }
 
+  const doRegisterForSalesforceChange = () => {
+    // Salesforce specific
+    if (!commandsAreHandled) {
+      if (salesforceConfig.doValidation(true)) {
+        registerSalesforceExtension(context);
+        commandsAreHandled = true;
+      } else if (salesforceConfig.configPartiallyExist()) {
+        salesforceConfig.doValidation(false);
+      }
+    }
+  };
+
+  vscode.workspace.onDidChangeConfiguration(e => doRegisterForSalesforceChange());
+  doRegisterForSalesforceChange();
   if (!commandsAreHandled) {
     provideHandlerForMissingConfig();
   }
@@ -67,9 +74,13 @@ const provideCompletionForMarkup = (context: vscode.ExtensionContext) => {
 
 const provideHandlerForMissingConfig = () => {
   vscode.commands.registerCommand('coveo.download', (uri: vscode.Uri) => {
-    vscode.window.showWarningMessage(l('MissingConfig'));
+    vscode.window.showWarningMessage(l('MissingConfig'), {
+      modal: true
+    });
   });
   vscode.commands.registerCommand('coveo.upload', (uri: vscode.Uri) => {
-    vscode.window.showWarningMessage(l('MissingConfig'));
+    vscode.window.showWarningMessage(l('MissingConfig'), {
+      modal: true
+    });
   });
 };

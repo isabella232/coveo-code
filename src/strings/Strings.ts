@@ -4,7 +4,7 @@ const i18ninstance = new i18n({
   locales: {
     en: {
       MissingConfig:
-        'Unable to find any configuration in your current workspace to allow to download and upload Coveo resource(s). Please configure your workspace as explained in the extension repository : https://github.com/coveo/coveo-code',
+        'Unable to find any configuration in your current workspace to allow to download and upload Coveo resource(s).\n\nPlease configure your workspace as explained in the extension repository :\n\nhttps://github.com/coveo/coveo-code#available-configuration-option-for-salesforce',
       FileNotFound: 'File not found',
       NoDiff: 'The file in your Salesforce organization is identical to your version locally',
       InvalidUriScheme: 'Invalid uri scheme : %s',

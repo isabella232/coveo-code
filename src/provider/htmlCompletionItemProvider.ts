@@ -10,11 +10,13 @@ import {
   getResultTemplateAttributeAtPosition,
   IScanOfAttributeValue,
   getResultTemplateComponentAtPosition,
-  getResultTemplateComponentOptionAtPosition
+  getResultTemplateComponentOptionAtPosition,
+  getComponentSuggestionAtPosition
 } from '../documentService';
 import { ComponentOptionValues } from '../completionItems/componentOptionValues';
 import { ComponentOption } from '../completionItems/componentOption';
 import { ResultTemplate } from '../completionItems/resultTemplate';
+import { ComponentName } from '../completionItems/componentName';
 
 export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider {
   constructor(public referenceDocumentation: ReferenceDocumentation) {}
@@ -26,6 +28,19 @@ export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider
   ): Thenable<vscode.CompletionItem[]> {
     return new Promise<vscode.CompletionItem[]>(async (resolve, reject) => {
       let completionItems: vscode.CompletionItem[] = [];
+
+      const currentComponentsSuggestions = getComponentSuggestionAtPosition(
+        this.referenceDocumentation,
+        position,
+        document
+      );
+      if (currentComponentsSuggestions) {
+        completionItems = completionItems.concat(
+          this.provideCompletionsForComponentNames(currentComponentsSuggestions)
+        );
+        resolve(completionItems);
+        return;
+      }
 
       const currentOptionComponentInsideResultTemplate = await getResultTemplateComponentOptionAtPosition(
         this.referenceDocumentation,
@@ -94,6 +109,10 @@ export class HTMLCompletionItemProvider implements vscode.CompletionItemProvider
       // TODO completions on component names
       resolve(completionItems);
     });
+  }
+
+  private provideCompletionsForComponentNames(components: IDocumentation[]) {
+    return components.map(component => new ComponentName(component));
   }
 
   private provideCompletionsForComponentOptionsValues(currentOption: IDocumentation) {

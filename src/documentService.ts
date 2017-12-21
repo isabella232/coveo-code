@@ -35,6 +35,19 @@ export function getComponentAtPosition(
   return undefined;
 }
 
+export function getComponentSuggestionAtPosition(
+  referenceDocumentation: ReferenceDocumentation,
+  position: vscode.Position,
+  document: vscode.TextDocument
+) {
+  const scanned = doCompleteScanOfCurrentSymbol(document, position);
+  const active = _.find(scanned, scan => scan.activeUnderCursor);
+  if (active && active.attributeName && active.attributeName.toLowerCase() == 'class') {
+    return referenceDocumentation.getAllComponents();
+  }
+  return undefined;
+}
+
 export async function getResultTemplateComponentAtPosition(
   referenceDocumentation: ReferenceDocumentation,
   position: vscode.Position,

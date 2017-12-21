@@ -11,6 +11,7 @@ export interface IDocumentation {
     required?: string;
   };
   options: IDocumentation[];
+  isCoveoComponent: boolean;
 }
 
 const documentationJSON: {
@@ -30,6 +31,12 @@ export class ReferenceDocumentation {
   public static camelCaseToHyphen(optionName: string) {
     const camelCaseToHyphenRegex = /([A-Z])|\W+(\w)/g;
     return `data-${optionName.replace(camelCaseToHyphenRegex, '-$1$2').toLowerCase()}`;
+  }
+
+  public getAllComponents(): IDocumentation[] | undefined {
+    return _.filter(ReferenceDocumentation.documentations, doc => {
+      return doc.isCoveoComponent;
+    });
   }
 
   public getDocumentation(symbol: vscode.SymbolInformation): IDocumentation | undefined {

@@ -236,7 +236,8 @@
         "prettier": "prettier --single-quote --print-width 120 --write 'src/**/*.ts'",
         "tslint": "tslint -c tslint.json src/**/*.ts",
         "postinstall": "node ./node_modules/vscode/bin/install",
-        "docstore": "node buildDocumentationObject.js"
+        "docstore": "node buildDocumentationObject.js",
+        "commit": "git-cz"
     },
     "devDependencies": {
         "@types/bluebird": "^3.5.18",
@@ -247,6 +248,7 @@
         "@types/mocha": "^2.2.32",
         "@types/node-fetch": "^1.6.7",
         "coveo-search-ui": "^2.3679.4",
+        "cz-conventional-changelog": "^2.1.0",
         "mocha": "^2.3.3",
         "prettier": "^1.5.2",
         "tslint": "^5.5.0",
@@ -267,5 +269,10 @@
         "parse-filepath": "^1.0.1",
         "vscode-html-languageservice": "^2.0.5",
         "write": "^1.0.3"
+    },
+    "config": {
+        "commitizen": {
+            "path": "./node_modules/cz-conventional-changelog"
+        }
     }
 }

@@ -250,7 +250,7 @@
         "coveo-search-ui": "^2.5549.2",
         "cz-conventional-changelog": "^2.1.0",
         "deep-extend": "^0.5.1",
-        "mocha": "^2.3.3",
+        "mocha": "^5.2.0",
         "prettier": "^1.5.2",
         "tslint": "^5.5.0",
         "typescript": "^2.0.3",

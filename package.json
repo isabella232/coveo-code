@@ -1,282 +1,286 @@
 {
-    "name": "coveo-code",
-    "displayName": "Coveo Code",
-    "description": "Developer support for Coveo",
-    "version": "0.0.3",
-    "publisher": "coveo",
-    "engines": {
-        "vscode": "^1.19.0"
-    },
-    "icon": "media/coveo-logo.png",
-    "galleryBanner": {
-        "color": "#f1f3f4",
-        "theme": "light"
-    },
-    "categories": [
-        "Other",
-        "Extension Packs"
+  "name": "coveo-code",
+  "displayName": "Coveo Code",
+  "description": "Developer support for Coveo",
+  "version": "0.0.3",
+  "publisher": "coveo",
+  "engines": {
+    "vscode": "^1.19.0"
+  },
+  "icon": "media/coveo-logo.png",
+  "galleryBanner": {
+    "color": "#f1f3f4",
+    "theme": "light"
+  },
+  "categories": [
+    "Other",
+    "Extension Packs"
+  ],
+  "bugs": {
+    "url": "https://github.com/coveo/coveo-code/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coveo/coveo-code.git"
+  },
+  "homepage": "https://github.com/coveo/coveo-code/blob/master/README.md",
+  "activationEvents": [
+    "*"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "visualforce",
+        "aliases": [
+          "Visualforce",
+          "visualforce"
+        ],
+        "extensions": [
+          ".cmp",
+          ".component",
+          ".page"
+        ],
+        "configuration": "./visualforce.configuration.json"
+      }
     ],
-    "bugs": {
-        "url": "https://github.com/coveo/coveo-code/issues"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/coveo/coveo-code.git"
-    },
-    "homepage": "https://github.com/coveo/coveo-code/blob/master/README.md",
-    "activationEvents": [
-        "*"
+    "commands": [
+      {
+        "command": "coveo.showDocumentation",
+        "title": "Coveo: Documentation for current component"
+      },
+      {
+        "command": "coveo.salesforce.retrieveApexComponent",
+        "title": "Coveo: Retrieve a Visualforce Component from Salesforce",
+        "icon": {
+          "dark": "./media/cloud-download-dark.svg",
+          "light": "./media/cloud-download-light.svg"
+        }
+      },
+      {
+        "command": "coveo.salesforce.retrieveLightningComponent",
+        "title": "Coveo: Retrieve a Lightning Component from Salesforce",
+        "icon": {
+          "dark": "./media/cloud-download-dark.svg",
+          "light": "./media/cloud-download-light.svg"
+        }
+      },
+      {
+        "command": "coveo.salesforce.retrieveApexPage",
+        "title": "Coveo: Retrieve a Visualforce Page from Salesforce",
+        "icon": {
+          "dark": "./media/cloud-download-dark.svg",
+          "light": "./media/cloud-download-light.svg"
+        }
+      },
+      {
+        "command": "coveo.salesforce.retrieveStaticResource",
+        "title": "Coveo: Retrieve a Static Resource from Salesforce",
+        "icon": {
+          "dark": "./media/cloud-download-dark.svg",
+          "light": "./media/cloud-download-light.svg"
+        }
+      },
+      {
+        "command": "coveo.takeLocal",
+        "title": "Coveo: Take local version",
+        "icon": {
+          "light": "./media/take-local-light.svg",
+          "dark": "./media/take-local-dark.svg"
+        }
+      },
+      {
+        "command": "coveo.takeRemote",
+        "title": "Coveo: Take remote version",
+        "icon": {
+          "light": "./media/take-remote-light.svg",
+          "dark": "./media/take-remote-dark.svg"
+        }
+      },
+      {
+        "command": "coveo.upload",
+        "title": "Coveo: Upload the resource",
+        "icon": {
+          "dark": "./media/cloud-upload-dark.svg",
+          "light": "./media/cloud-upload-light.svg"
+        }
+      },
+      {
+        "command": "coveo.download",
+        "title": "Coveo: Download the resource",
+        "icon": {
+          "dark": "./media/cloud-download-dark.svg",
+          "light": "./media/cloud-download-light.svg"
+        }
+      }
     ],
-    "contributes": {
-        "languages": [
-            {
-                "id": "visualforce",
-                "aliases": [
-                    "Visualforce",
-                    "visualforce"
-                ],
-                "extensions": [
-                    ".cmp",
-                    ".component",
-                    ".page"
-                ],
-                "configuration": "./visualforce.configuration.json"
-            }
-        ],
-        "commands": [
-            {
-                "command": "coveo.showDocumentation",
-                "title": "Coveo: Documentation for current component"
-            },
-            {
-                "command": "coveo.salesforce.retrieveApexComponent",
-                "title": "Coveo: Retrieve a Visualforce Component from Salesforce",
-                "icon": {
-                    "dark": "./media/cloud-download-dark.svg",
-                    "light": "./media/cloud-download-light.svg"
-                }
-            },
-            {
-                "command": "coveo.salesforce.retrieveLightningComponent",
-                "title": "Coveo: Retrieve a Lightning Component from Salesforce",
-                "icon": {
-                    "dark": "./media/cloud-download-dark.svg",
-                    "light": "./media/cloud-download-light.svg"
-                }
-            },
-            {
-                "command": "coveo.salesforce.retrieveApexPage",
-                "title": "Coveo: Retrieve a Visualforce Page from Salesforce",
-                "icon": {
-                    "dark": "./media/cloud-download-dark.svg",
-                    "light": "./media/cloud-download-light.svg"
-                }
-            },
-            {
-                "command": "coveo.salesforce.retrieveStaticResource",
-                "title": "Coveo: Retrieve a Static Resource from Salesforce",
-                "icon": {
-                    "dark": "./media/cloud-download-dark.svg",
-                    "light": "./media/cloud-download-light.svg"
-                }
-            },
-            {
-                "command": "coveo.takeLocal",
-                "title": "Coveo: Take local version",
-                "icon": {
-                    "light": "./media/take-local-light.svg",
-                    "dark": "./media/take-local-dark.svg"
-                }
-            },
-            {
-                "command": "coveo.takeRemote",
-                "title": "Coveo: Take remote version",
-                "icon": {
-                    "light": "./media/take-remote-light.svg",
-                    "dark": "./media/take-remote-dark.svg"
-                }
-            },
-            {
-                "command": "coveo.upload",
-                "title": "Coveo: Upload the resource",
-                "icon": {
-                    "dark": "./media/cloud-upload-dark.svg",
-                    "light": "./media/cloud-upload-light.svg"
-                }
-            },
-            {
-                "command": "coveo.download",
-                "title": "Coveo: Download the resource",
-                "icon": {
-                    "dark": "./media/cloud-download-dark.svg",
-                    "light": "./media/cloud-download-light.svg"
-                }
-            }
-        ],
-        "keybindings": [
-            {
-                "command": "coveo.showDocumentation",
-                "key": "ctrl+f1",
-                "mac": "cmd+f1",
-                "when": "editorLangId == html && editorTextFocus"
-            },
-            {
-                "command": "coveo.showDocumentation",
-                "key": "ctrl+f1",
-                "mac": "cmd+f1",
-                "when": "editorLangId == visualforce && editorTextFocus"
-            },
-            {
-                "command": "coveo.upload",
-                "key": "ctrl+u ctrl+u",
-                "mac": "ctrl+u ctrl+u",
-                "when": "editorLangId == html && editorTextFocus"
-            },
-            {
-                "command": "coveo.upload",
-                "key": "ctrl+u ctrl+u",
-                "mac": "ctrl+u ctrl+u",
-                "when": "editorLangId == css && editorTextFocus"
-            },
-            {
-                "command": "coveo.upload",
-                "key": "ctrl+u ctrl+u",
-                "mac": "ctrl+u ctrl+u",
-                "when": "editorLangId == javascript && editorTextFocus"
-            },
-            {
-                "command": "coveo.upload",
-                "key": "ctrl+u ctrl+u",
-                "mac": "ctrl+u ctrl+u",
-                "when": "editorLangId == visualforce && editorTextFocus"
-            },
-            {
-                "command": "coveo.download",
-                "key": "ctrl+d ctrl+d",
-                "mac": "ctrl+d ctrl+d",
-                "when": "editorLangId == html && editorTextFocus"
-            },
-            {
-                "command": "coveo.download",
-                "key": "ctrl+d ctrl+d",
-                "mac": "ctrl+d ctrl+d",
-                "when": "editorLangId == css && editorTextFocus"
-            },
-            {
-                "command": "coveo.download",
-                "key": "ctrl+d ctrl+d",
-                "mac": "ctrl+d ctrl+d",
-                "when": "editorLangId == javascript && editorTextFocus"
-            },
-            {
-                "command": "coveo.download",
-                "key": "ctrl+d ctrl+d",
-                "mac": "ctrl+d ctrl+d",
-                "when": "editorLangId == visualforce && editorTextFocus"
-            }
-        ],
-        "menus": {
-            "editor/context": [
-                {
-                    "command": "coveo.showDocumentation",
-                    "when": "editorLangId == html && editorTextFocus",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.showDocumentation",
-                    "when": "editorLangId == visualforce && editorTextFocus",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.takeLocal",
-                    "when": "textCompareEditorVisible"
-                },
-                {
-                    "command": "coveo.takeRemote",
-                    "when": "textCompareEditorVisible"
-                },
-                {
-                    "command": "coveo.upload",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.download",
-                    "group": "navigation"
-                }
-            ],
-            "editor/title": [
-                {
-                    "command": "coveo.takeLocal",
-                    "when": "textCompareEditorVisible",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.takeRemote",
-                    "when": "textCompareEditorVisible",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.upload",
-                    "when": "!textCompareEditorVisible",
-                    "group": "navigation"
-                },
-                {
-                    "command": "coveo.download",
-                    "when": "!textCompareEditorVisible",
-                    "group": "navigation"
-                }
-            ]
+    "keybindings": [
+      {
+        "command": "coveo.showDocumentation",
+        "key": "ctrl+f1",
+        "mac": "cmd+f1",
+        "when": "editorLangId == html && editorTextFocus"
+      },
+      {
+        "command": "coveo.showDocumentation",
+        "key": "ctrl+f1",
+        "mac": "cmd+f1",
+        "when": "editorLangId == visualforce && editorTextFocus"
+      },
+      {
+        "command": "coveo.upload",
+        "key": "ctrl+u ctrl+u",
+        "mac": "ctrl+u ctrl+u",
+        "when": "editorLangId == html && editorTextFocus"
+      },
+      {
+        "command": "coveo.upload",
+        "key": "ctrl+u ctrl+u",
+        "mac": "ctrl+u ctrl+u",
+        "when": "editorLangId == css && editorTextFocus"
+      },
+      {
+        "command": "coveo.upload",
+        "key": "ctrl+u ctrl+u",
+        "mac": "ctrl+u ctrl+u",
+        "when": "editorLangId == javascript && editorTextFocus"
+      },
+      {
+        "command": "coveo.upload",
+        "key": "ctrl+u ctrl+u",
+        "mac": "ctrl+u ctrl+u",
+        "when": "editorLangId == visualforce && editorTextFocus"
+      },
+      {
+        "command": "coveo.download",
+        "key": "ctrl+d ctrl+d",
+        "mac": "ctrl+d ctrl+d",
+        "when": "editorLangId == html && editorTextFocus"
+      },
+      {
+        "command": "coveo.download",
+        "key": "ctrl+d ctrl+d",
+        "mac": "ctrl+d ctrl+d",
+        "when": "editorLangId == css && editorTextFocus"
+      },
+      {
+        "command": "coveo.download",
+        "key": "ctrl+d ctrl+d",
+        "mac": "ctrl+d ctrl+d",
+        "when": "editorLangId == javascript && editorTextFocus"
+      },
+      {
+        "command": "coveo.download",
+        "key": "ctrl+d ctrl+d",
+        "mac": "ctrl+d ctrl+d",
+        "when": "editorLangId == visualforce && editorTextFocus"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "coveo.showDocumentation",
+          "when": "editorLangId == html && editorTextFocus",
+          "group": "navigation"
+        },
+        {
+          "command": "coveo.showDocumentation",
+          "when": "editorLangId == visualforce && editorTextFocus",
+          "group": "navigation"
+        },
+        {
+          "command": "coveo.takeLocal",
+          "when": "textCompareEditorVisible"
+        },
+        {
+          "command": "coveo.takeRemote",
+          "when": "textCompareEditorVisible"
+        },
+        {
+          "command": "coveo.upload",
+          "group": "navigation"
+        },
+        {
+          "command": "coveo.download",
+          "group": "navigation"
         }
-    },
-    "main": "./out/src/extension",
-    "scripts": {
-        "build": "npm run prettier && npm run tslint && npm run docstore && ./node_modules/typescript/bin/tsc -p ./",
-        "vscode:prepublish": "./node_modules/typescript/bin/tsc -p ./",
-        "compile": "node ./node_modules/typescript/bin/tsc -watch -p ./",
-        "prettier": "prettier --single-quote --print-width 120 --write 'src/**/*.ts'",
-        "tslint": "tslint -c tslint.json src/**/*.ts",
-        "postinstall": "node ./node_modules/vscode/bin/install",
-        "docstore": "node buildDocumentationObject.js",
-        "commit": "git-cz"
-    },
-    "devDependencies": {
-        "@types/bluebird": "^3.5.18",
-        "@types/cheerio": "^0.22.2",
-        "@types/html-to-text": "^1.4.30",
-        "@types/jsforce": "^1.8.2",
-        "@types/lodash": "^4.14.74",
-        "@types/mocha": "^2.2.32",
-        "@types/node-fetch": "^1.6.7",
-        "coveo-search-ui": "^2.5549.2",
-        "cz-conventional-changelog": "^2.1.0",
-        "deep-extend": "^0.5.1",
-        "mocha": "^5.2.0",
-        "prettier": "^1.5.2",
-        "tslint": "^5.5.0",
-        "typescript": "^2.0.3",
-        "vscode": "^1.1.29"
-    },
-    "dependencies": {
-        "adm-zip": "^0.4.13",
-        "archiver": "^2.0.0",
-        "bluebird": "^3.5.1",
-        "cheerio": "^1.0.0-rc.2",
-        "growl": "^1.10.5",
-        "hoek": "^4.2.1",
-        "html-to-text": "^3.3.0",
-        "i18n-2": "^0.7.0",
-        "jquery": "^3.4.0",
-        "jsforce": "^1.9.1",
-        "lodash": "^4.17.11",
-        "mkdirp": "^0.5.1",
-        "node-fetch": "^1.7.1",
-        "parse-filepath": "^1.0.1",
-        "vscode-html-languageservice": "^2.0.5",
-        "write": "^1.0.3"
-    },
-    "config": {
-        "commitizen": {
-            "path": "./node_modules/cz-conventional-changelog"
+      ],
+      "editor/title": [
+        {
+          "command": "coveo.takeLocal",
+          "when": "textCompareEditorVisible",
+          "group": "navigation"
+        },
+        {
+          "command": "coveo.takeRemote",
+          "when": "textCompareEditorVisible",
+          "group": "navigation"
+        },
+        {
+          "command": "coveo.upload",
+          "when": "!textCompareEditorVisible",
+          "group": "navigation"
+        },
+        {
+          "command": "coveo.download",
+          "when": "!textCompareEditorVisible",
+          "group": "navigation"
         }
+      ]
     }
+  },
+  "main": "./out/src/extension",
+  "scripts": {
+    "build": "npm run prettier && npm run tslint && npm run docstore && ./node_modules/typescript/bin/tsc -p ./",
+    "vscode:prepublish": "./node_modules/typescript/bin/tsc -p ./",
+    "compile": "node ./node_modules/typescript/bin/tsc -watch -p ./",
+    "prettier": "prettier --single-quote --print-width 120 --write 'src/**/*.ts'",
+    "tslint": "tslint -c tslint.json src/**/*.ts",
+    "postinstall": "node ./node_modules/vscode/bin/install",
+    "docstore": "node buildDocumentationObject.js",
+    "commit": "git-cz",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
+  },
+  "devDependencies": {
+    "@types/bluebird": "^3.5.18",
+    "@types/cheerio": "^0.22.2",
+    "@types/html-to-text": "^1.4.30",
+    "@types/jsforce": "^1.8.2",
+    "@types/lodash": "^4.14.74",
+    "@types/mocha": "^2.2.32",
+    "@types/node-fetch": "^1.6.7",
+    "coveo-search-ui": "^2.5549.2",
+    "cz-conventional-changelog": "^2.1.0",
+    "deep-extend": "^0.5.1",
+    "mocha": "^5.2.0",
+    "prettier": "^1.5.2",
+    "tslint": "^5.5.0",
+    "typescript": "^2.0.3",
+    "vscode": "^1.1.29"
+  },
+  "dependencies": {
+    "adm-zip": "^0.4.13",
+    "archiver": "^2.0.0",
+    "bluebird": "^3.5.1",
+    "cheerio": "^1.0.0-rc.2",
+    "growl": "^1.10.5",
+    "hoek": "^4.2.1",
+    "html-to-text": "^3.3.0",
+    "i18n-2": "^0.7.0",
+    "jquery": "^3.4.0",
+    "jsforce": "^1.9.1",
+    "lodash": "^4.17.11",
+    "mkdirp": "^0.5.1",
+    "node-fetch": "^1.7.1",
+    "parse-filepath": "^1.0.1",
+    "vscode-html-languageservice": "^2.0.5",
+    "write": "^1.0.3",
+    "snyk": "^1.189.0"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "snyk": true
 }

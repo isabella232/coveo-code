@@ -268,11 +268,11 @@
         "jquery": "^3.4.0",
         "jsforce": "^1.9.1",
         "lodash": "^4.17.11",
-        "mkdirp": "^0.5.1",
+        "mkdirp": "^1.0.0",
         "node-fetch": "^1.7.1",
         "parse-filepath": "^1.0.1",
         "vscode-html-languageservice": "^2.0.5",
-        "write": "^1.0.3"
+        "write": "^2.0.0"
     },
     "config": {
         "commitizen": {

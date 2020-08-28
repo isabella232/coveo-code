@@ -267,7 +267,7 @@
         "i18n-2": "^0.7.0",
         "jquery": "^3.4.0",
         "jsforce": "^1.9.1",
-        "lodash": "^4.17.11",
+        "lodash": "^4.17.17",
         "mkdirp": "^0.5.1",
         "node-fetch": "^1.7.1",
         "parse-filepath": "^1.0.1",

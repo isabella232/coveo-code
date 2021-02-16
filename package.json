@@ -257,7 +257,7 @@
         "vscode": "^1.1.29"
     },
     "dependencies": {
-        "adm-zip": "^0.4.13",
+        "adm-zip": "^0.5.2",
         "archiver": "^2.0.0",
         "bluebird": "^3.5.1",
         "cheerio": "^1.0.0-rc.2",
